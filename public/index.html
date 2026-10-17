@@ -1,0 +1,702 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dodge-The-Beat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --night: #2f2466;
+            --night-deep: #231a52;
+            --panel: #d9ccff;
+            --panel-ink: #2a1d5c;
+            --pink: #ff5fa8;
+            --pink-dark: #a31d6b;
+            --orange: #ff9f43;
+            --gold: #ffd86b;
+            --mint: #5be37d;
+            --outline: #1a1240;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 28px 18px 210px;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 10%, #3d2f80 0%, var(--night) 45%, var(--night-deep) 100%);
+            color: #f1eaff;
+            font-family: 'VT323', ui-monospace, monospace;
+            font-size: 1.35rem;
+            text-align: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .container { max-width: 500px; margin: 0 auto; position: relative; z-index: 2; }
+
+        /* Pixel scene background */
+        #scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .sp { position: absolute; line-height: 0; }
+        .sp svg { display: block; }
+        .moon  { top: 5%; right: 8%; }
+        .cloud { left: -260px; animation: drift linear infinite; }
+        .cloud svg { width: var(--cw, 120px); height: auto; }
+        .cloud-a { top: 16%; --cw: 130px; animation-duration: 90s; }
+        .cloud-b { top: 52%; --cw: 110px; animation-duration: 120s; animation-delay: -50s; opacity: .9; }
+        .cloud-c { top: 7%;  --cw: 84px;  animation-duration: 70s;  animation-delay: -22s; opacity: .85; }
+        .cloud-d { top: 36%; --cw: 150px; animation-duration: 110s; animation-delay: -70s; }
+        .cloud-e { top: 66%; --cw: 96px;  animation-duration: 100s; animation-delay: -35s; opacity: .8; }
+        .cloud-f { top: 26%; --cw: 72px;  animation-duration: 60s;  animation-delay: -10s; opacity: .75; }
+        .tree  { bottom: 64px; left: 3%; }
+        .bush  { bottom: 64px; right: 4%; }
+        .star  { animation: twinkle 3s steps(2) infinite; }
+        @keyframes drift { to { transform: translateX(calc(100vw + 300px)); } }
+        @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+        #ground {
+            position: fixed; left: 0; right: 0; bottom: 0; height: 64px; z-index: 1;
+            border-top: 6px solid #c3cbef;
+            background-size: 64px 32px;
+            image-rendering: pixelated;
+            pointer-events: none;
+        }
+        @media (max-width: 700px) { .tree, .bush { display: none; } }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            background: var(--panel);
+            color: var(--panel-ink);
+            border-radius: 28px;
+            padding: 30px 18px 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 0 rgba(0, 0, 0, .25);
+        }
+        h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(1rem, 5.2vw, 1.55rem);
+            line-height: 1.6;
+            margin: 0 0 22px;
+            color: var(--panel-ink);
+            letter-spacing: 1px;
+        }
+        .pill {
+            display: inline-block;
+            position: relative;
+            background: var(--pink);
+            color: #fff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: .6rem;
+            padding: 10px 26px;
+            border: 3px solid #4b1442;
+            border-radius: 12px;
+            box-shadow: inset 0 3px 0 #ff9fd0, inset 0 -4px 0 var(--pink-dark);
+        }
+        .pill .cursor { position: absolute; right: -22px; bottom: -34px; line-height: 0; }
+        .hero .folder { position: absolute; right: -10px; bottom: -22px; line-height: 0; transform: rotate(4deg); }
+
+        /* Cards */
+        .card {
+            background: var(--panel);
+            color: var(--panel-ink);
+            border-radius: 24px;
+            padding: 22px 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 0 rgba(0, 0, 0, .25);
+        }
+        h2, h3 { font-family: 'Press Start 2P', monospace; font-weight: 400; line-height: 1.6; margin: 0 0 14px; }
+        h3 { font-size: .75rem; }
+        #musicPanel { display: none; }
+        #charTitle { font-size: .8rem; background: var(--panel-ink); color: var(--gold); display: inline-block; padding: 10px 14px; border-radius: 10px; }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: #efe8ff;
+            border: 3px dashed #6b58c9;
+            border-radius: 12px;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            color: var(--panel-ink);
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            background: var(--panel-ink);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            margin-right: 12px;
+            border-radius: 8px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: .55rem;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--pink);
+            color: #fff;
+            border: 3px solid #4b1442;
+            padding: 14px 20px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: .65rem;
+            line-height: 1.6;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 6px;
+            box-shadow: inset 0 3px 0 #ff9fd0, inset 0 -5px 0 var(--pink-dark);
+            transition: transform .08s;
+        }
+        button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:active { transform: translateY(3px); box-shadow: inset 0 3px 0 #ff9fd0; }
+
+        #musicButtons button { display: block; width: 100%; margin: 12px 0; text-align: left; color: var(--outline); }
+        #musicButtons button:nth-child(3n+1) { background: var(--orange); box-shadow: inset 0 3px 0 #ffcf9a, inset 0 -5px 0 #c26a14; border-color: var(--outline); }
+        #musicButtons button:nth-child(3n+2) { background: var(--mint);   box-shadow: inset 0 3px 0 #b6f5c5, inset 0 -5px 0 #2a9c4a; border-color: var(--outline); }
+        #musicButtons button:nth-child(3n)   { background: var(--gold);   box-shadow: inset 0 3px 0 #fff0b8, inset 0 -5px 0 #c9a02c; border-color: var(--outline); }
+
+        #statusText { margin: 14px 0 0; min-height: 1.4em; }
+
+        #gameOverPanel { background: #3b1d6e; color: #f1eaff; }
+        #gameOverPanel h2 { font-size: 1.3rem; color: var(--pink); text-shadow: 3px 3px 0 var(--outline); animation: shake .5s; }
+        @keyframes shake { 0%,100% { translate: 0; } 20% { translate: -8px 0; } 40% { translate: 8px 0; } 60% { translate: -6px 0; } 80% { translate: 6px 0; } }
+        #roastText { background: var(--panel); color: var(--panel-ink); border-radius: 12px; padding: 14px; }
+
+        /* Game Canvas */
+        #gameCanvas {
+            display: none;
+            background: var(--night-deep);
+            border: 6px solid #c3cbef;
+            outline: 4px solid var(--outline);
+            border-radius: 6px;
+            box-shadow: 0 10px 0 rgba(0, 0, 0, .35);
+            margin: 15px auto 22px;
+            width: min(100%, max(240px, min(400px, calc((100vh - 150px) * .727))));
+            height: auto;
+            aspect-ratio: 400 / 550;
+            touch-action: none;
+            user-select: none;
+        }
+        #controlsHint { display: none; margin: 0 0 28px; }
+        .key {
+            display: inline-block; min-width: 34px; padding: 6px 8px; margin: 0 3px;
+            background: var(--panel); color: var(--panel-ink);
+            border-bottom: 5px solid #8d7cd6; border-radius: 6px;
+            font-family: 'Press Start 2P', monospace; font-size: .6rem;
+        }
+        .footer-note { font-size: 1.1rem; background: rgba(26, 18, 64, .75); padding: 4px 14px; border-radius: 999px; }
+
+        .tagline { margin: -8px 0 26px; font-size: 1.55rem; line-height: 1.2; color: #ffe9b0; text-shadow: 2px 2px 0 var(--outline); }
+        .tagline b { color: var(--pink); font-weight: normal; }
+        .inl { display: inline-block; vertical-align: middle; line-height: 0; margin: 0 6px; }
+        .mascot { position: absolute; left: 50%; bottom: 66px; margin-left: -36px; line-height: 0; transform-origin: 50% 100%; animation: hop 2.2s infinite; }
+        .mascot-shadow { position: absolute; left: 50%; bottom: 62px; width: 56px; height: 8px; margin-left: -28px; background: rgba(0, 0, 0, .35); border-radius: 50%; animation: shadow 2.2s infinite; }
+        .dash-block { position: absolute; left: 50%; bottom: 66px; width: 40px; height: 40px; margin-left: -20px; background: var(--orange); border: 4px solid var(--outline); box-shadow: inset 0 4px 0 rgba(255,255,255,.4), inset 0 -5px 0 rgba(0,0,0,.25); animation: slide 2.2s linear infinite; }
+        .note { position: absolute; line-height: 0; opacity: 0; animation: floatnote 3s ease-in infinite; }
+        .n1 { left: calc(50% - 130px); bottom: 150px; }
+        .n2 { left: calc(50% + 100px); bottom: 160px; animation-delay: -1s; }
+        .n3 { left: calc(50% - 30px); bottom: 175px; animation-delay: -2s; }
+        @keyframes hop {
+            0%, 28% { transform: translateY(0) scale(1, 1); }
+            32% { transform: translateY(0) scale(1.12, .86); }
+            38%, 56% { transform: translateY(-62px) scale(.95, 1.06); }
+            62% { transform: translateY(0) scale(1.12, .86); }
+            68%, 100% { transform: translateY(0) scale(1, 1); }
+        }
+        @keyframes shadow {
+            0%, 30%, 62%, 100% { transform: scaleX(1); opacity: 1; }
+            38%, 56% { transform: scaleX(.55); opacity: .5; }
+        }
+        @keyframes slide {
+            0% { transform: translateX(270px); opacity: 0; }
+            8%, 92% { opacity: 1; }
+            100% { transform: translateX(-270px); opacity: 0; }
+        }
+        @keyframes floatnote {
+            0% { opacity: 0; transform: translateY(0); }
+            20% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+
+        .shoot { width: 12px; height: 12px; opacity: 0; animation: shoot 9s linear infinite; }
+        .shoot::before { content: ""; position: absolute; right: 60%; top: 50%; width: 70px; height: 3px; margin-top: -1px; background: linear-gradient(to left, #ffd86b, transparent); transform-origin: right center; rotate: 30deg; }
+        .shoot-1 { top: 8%;  left: 12%; }
+        .shoot-2 { top: 20%; left: 55%; animation-duration: 12s; animation-delay: -4s; }
+        .shoot-3 { top: 5%;  left: 78%; animation-duration: 15s; animation-delay: -7s; }
+        @keyframes shoot {
+            0% { opacity: 0; transform: translate(0, 0); }
+            2% { opacity: 1; }
+            14% { opacity: 1; transform: translate(240px, 138px); }
+            16%, 100% { opacity: 0; transform: translate(240px, 138px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Audio Player Element -->
+<audio id="bgMusic" loop crossorigin="anonymous"></audio>
+
+<!-- Pixel night scene -->
+<div id="scene">
+    <div class="sp moon"    data-sprite="moon"  data-px="6"></div>
+    <div class="sp cloud cloud-a" data-sprite="cloud" data-px="6"></div>
+    <div class="sp cloud cloud-b" data-sprite="cloud" data-px="5"></div>
+    <div class="sp cloud cloud-c" data-sprite="cloud" data-px="4"></div>
+    <div class="sp cloud cloud-d" data-sprite="cloud" data-px="6"></div>
+    <div class="sp cloud cloud-e" data-sprite="cloud" data-px="5"></div>
+    <div class="sp cloud cloud-f" data-sprite="cloud" data-px="4"></div>
+    <div class="sp tree"    data-sprite="tree"  data-px="6"></div>
+    <div class="sp bush"    data-sprite="bush"  data-px="5"></div>
+    <span class="note n1" data-sprite="note" data-px="4"></span>
+    <span class="note n2" data-sprite="note" data-px="3"></span>
+    <span class="note n3" data-sprite="note" data-px="3"></span>
+    <div class="mascot-shadow"></div>
+    <div class="mascot" data-sprite="mascot" data-px="6"></div>
+    <div class="dash-block"></div>
+</div>
+<div id="ground"></div>
+
+<div class="container">
+    <div class="hero">
+        <h1>DODGE-THE-BEAT</h1>
+        <div class="pill">PIXEL VIBE RUNNER
+            <span class="cursor" data-sprite="cursor" data-px="4"></span>
+        </div>
+        <span class="folder" data-sprite="folder" data-px="5"></span>
+    </div>
+
+    <p class="tagline"><span class="inl" data-sprite="note" data-px="3"></span>Drop a pic. Catch its song. <b>Dodge the beat!</b><span class="inl" data-sprite="note" data-px="3"></span></p>
+
+    <!-- STEP 1: UPLOAD -->
+    <div id="uploadPanel" class="card">
+        <h3>1. Upload Your Photo</h3>
+        <input type="file" id="imageInput" accept="image/*" />
+        <br><br>
+        <button onclick="uploadAndAnalyze()">Analyze My Photo</button>
+        <p id="statusText"></p>
+    </div>
+
+    <!-- STEP 2: MUSIC SELECT -->
+    <div id="musicPanel" class="card">
+        <h2 id="charTitle"></h2>
+        <h3>2. Select Your Music Pace:</h3>
+        <div id="musicButtons"></div>
+    </div>
+
+    <!-- STEP 3: GAME CANVAS -->
+    <canvas id="gameCanvas" width="400" height="550"></canvas>
+    <p id="controlsHint">Move: <span class="key">A</span><span class="key">D</span> or <span class="key">&larr;</span><span class="key">&rarr;</span><br>or tap the left / right side</p>
+
+    <div id="gameOverPanel" class="card" style="display:none;">
+        <h2>GAME OVER</h2>
+        <p id="roastText"></p>
+        <button onclick="resetGame()">Play Again</button>
+    </div>
+
+    <span class="footer-note">Made for Hacktoberfest</span>
+</div>
+
+<script>
+    /* Sprite SVGs */
+    const SPRITES = {
+        moon: { px: 6, pal: { y: '#ffd86b' }, map: [
+                '....yyyy....', '..yyyyyy....', '.yyyyy......', '.yyyy.......',
+                'yyyyy.......', 'yyyyy.......', 'yyyyy.......', 'yyyyy.......',
+                '.yyyy.......', '.yyyyy.yyy..', '..yyyyyyyy..', '....yyyy....' ] },
+        star: { px: 3, pal: { y: '#ffd86b' }, map: [
+                '...y...', '...y...', '..yyy..', 'yyyyyyy', '..yyy..', '...y...', '...y...' ] },
+        cloud: { px: 6, pal: { p: '#ff8fb8', o: '#ffb36b', l: '#9a86e6' }, map: [
+                '......oooo..........', '....oooooooo........', '..ppppppppppoo......',
+                '.pppppppppppppppp...', 'pppppppppppppppppppp', 'lllllllllllllllllll.', '.llllllllllllllllll.' ] },
+        tree: { px: 6, pal: { g: '#4fc24a', G: '#2f8f3a', b: '#6b4a2b' }, map: [
+                '....gggggggg......', '..ggggggggggggg...', '.gggGggggggGggggg.',
+                'gggggggGgggggggggg', 'ggGggggggggGgggggg', '.gggggggggggggggg.',
+                '..gggGgggggGggg...', '....gggggggggg....', '........bb........',
+                '........bb........', '.......bbbb.......', '......bbbbbb......' ] },
+        bush: { px: 5, pal: { g: '#3aa75a', G: '#2a7a44' }, map: [
+                '...gggg.....', '.gggGgggg...', 'ggggggGggggg', 'gGggggggGggg', 'gggggggggggg' ] },
+        folder: { px: 5, pal: { d: '#3a2410', y: '#ffc93c', o: '#f59e0b' }, map: [
+                'dddddd' + '.'.repeat(10),
+                'dyyyyyd' + '.'.repeat(9),
+                'dyyyyyd' + 'd'.repeat(8) + '.',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'o'.repeat(14) + 'd',
+                'd'.repeat(16) ] },
+        cursor: { px: 4, pal: { d: '#1a1240', w: '#ffffff' }, map: [
+                'd...........', 'dd..........', 'dwd.........', 'dwwd........', 'dwwwd.......',
+                'dwwwwd......', 'dwwwwwd.....', 'dwwwwwwd....', 'dwwwwwwwd...', 'dwwwwwdddd..',
+                'dwwdwwd.....', 'dwd.dwwd....', 'dd..dwwd....', 'd....dwwd...', '.....dwwd...', '......dd....' ] },
+        mascot: { px: 6, pal: { g: '#ffd86b', d: '#1a1240', p: '#ff5fa8', w: '#ffffff' }, map: [
+                '..gggggggg..', '.gddddddddg.', 'gdppppppppdg', 'gdpwwppwwpdg',
+                'gdpwdppwdpdg', 'gdppppppppdg', 'gdpppddpppdg', '.dppppppppd.',
+                '..dppppppd..', '..dddddddd..', '..dd....dd..', '..dd....dd..' ] },
+        note: { px: 4, pal: { n: '#ffd86b' }, map: [
+                '...nnnn.', '...n..n.', '...n..n.', '...n....', '...n....', '.nnn....', 'nnnn....', '.nn.....' ] },
+        stone: { px: 4, pal: { d: '#4a4f7a', S: '#aab3d9', s: '#7f89b8' }, map: [
+                'dddddddddddddddd', 'SSSSSsssdSSSSsss', 'SssssssdSssssssd', 'dddddddddddddddd',
+                'ssdSSSSSsssdSSSS', 'ssdSsssssssdSsss', 'ssdsssssssdsssss', 'dddddddddddddddd' ] }
+    };
+
+    SPRITES.starW = { ...SPRITES.star, pal: { y: '#fff4d6' } };
+    SPRITES.starP = { ...SPRITES.star, pal: { y: '#ff9fd0' } };
+
+    function spriteSVG(name, px) {
+        const s = SPRITES[name];
+        const size = px || s.px;
+        const h = s.map.length;
+        const w = Math.max(...s.map.map(r => r.length));
+        let rects = '';
+        s.map.forEach((row, y) => {
+            let x = 0;
+            while (x < w) {
+                const c = row[x] || '.';
+                if (c === '.') { x++; continue; }
+                let n = 1;
+                while (x + n < w && (row[x + n] || '.') === c) n++;
+                rects += `<rect x="${x}" y="${y}" width="${n}" height="1" fill="${s.pal[c]}"/>`;
+                x += n;
+            }
+        });
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w * size}" height="${h * size}" shape-rendering="crispEdges">${rects}</svg>`;
+    }
+
+    document.querySelectorAll('[data-sprite]').forEach(el => {
+        el.innerHTML = spriteSVG(el.dataset.sprite, parseInt(el.dataset.px, 10));
+    });
+
+    const stoneBg = 'url("data:image/svg+xml,' + encodeURIComponent(spriteSVG('stone', 4)) + '")';
+    document.getElementById('ground').style.backgroundImage = stoneBg;
+
+    (function () {
+        const scene = document.getElementById('scene');
+        const kinds = ['star', 'starW', 'starP', 'starW'];
+        const sizes = [2, 3, 3, 4];
+        for (let i = 0; i < 18; i++) {
+            const d = document.createElement('div');
+            d.className = 'sp star';
+            d.style.left = (Math.random() * 96 + 1) + '%';
+            d.style.top = (Math.random() * 80 + 2) + '%';
+            d.style.animationDuration = (2 + Math.random() * 3.5) + 's';
+            d.style.animationDelay = (-Math.random() * 5) + 's';
+            d.innerHTML = spriteSVG(kinds[Math.floor(Math.random() * kinds.length)], sizes[Math.floor(Math.random() * sizes.length)]);
+            scene.appendChild(d);
+        }
+        [1, 2, 3].forEach(n => {
+            const d = document.createElement('div');
+            d.className = 'sp shoot shoot-' + n;
+            d.innerHTML = spriteSVG('star', 3);
+            scene.appendChild(d);
+        });
+    })();
+
+    /* Game Engine & Audio */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const bgAudio = document.getElementById('bgMusic');
+
+    let base64Image = "";
+    let gameData = null;
+    let playerImg = new Image();
+
+    // Royalty-Free Audio Tracks
+    const musicTracks = {
+        4: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3", // Chill Synthwave
+        7: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3", // Campus Pop
+        11: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3"  // Cyberpunk Rush
+    };
+
+    const numLanes = 4;
+    const laneWidth = canvas.width / numLanes;
+    let currentLane = 1;
+    let obstacleSpeed = 6;
+    let score = 0;
+    let gameOver = false;
+    let fallingObjects = [];
+    let gameInterval = null;
+    let trail = [];
+    let popups = [];
+    let scroll = 0;
+
+    const laneColors = ['#2b2060', '#352879', '#2b2060', '#352879'];
+    const blockColors = ['#ff5fa8', '#ff9f43', '#ffd86b', '#5be37d'];
+    const trailColors = ['#ff5fa8', '#ff9f43', '#ffd86b', '#5be37d'];
+    const STAR_MAP = ['...y...', '...y...', '..yyy..', 'yyyyyyy', '..yyy..', '...y...', '...y...'];
+
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function() {
+            base64Image = reader.result;
+            playerImg.src = base64Image;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    async function uploadAndAnalyze() {
+        if (!base64Image) return alert("Please select an image first!");
+        document.getElementById('statusText').innerText = "Reading your vibe...";
+
+        const response = await fetch('/api/analyze-character', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64Image })
+        });
+
+        const data = await response.json();
+        if (!data.success) return alert("Error processing image.");
+
+        gameData = data.gameData;
+        document.getElementById('uploadPanel').style.display = 'none';
+        document.getElementById('musicPanel').style.display = 'block';
+        document.getElementById('charTitle').innerText = `Character: ${gameData.characterName}`;
+
+        const btnContainer = document.getElementById('musicButtons');
+        btnContainer.innerHTML = '';
+        gameData.musicOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = `${opt.genre} (${opt.description})`;
+            btn.onclick = () => startGame(opt.bpmSpeed);
+            btnContainer.appendChild(btn);
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a') if (currentLane > 0) currentLane--;
+        if (e.key === 'ArrowRight' || e.key === 'd') if (currentLane < numLanes - 1) currentLane++;
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        if (e.clientX - rect.left < rect.width / 2) { if (currentLane > 0) currentLane--; }
+        else { if (currentLane < numLanes - 1) currentLane++; }
+    });
+
+    // Web Audio Impact SFX
+    function playCollisionSFX() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.3);
+
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        } catch (e) { console.log(e); }
+    }
+
+    function startGame(speed) {
+        obstacleSpeed = speed;
+        document.getElementById('musicPanel').style.display = 'none';
+        canvas.style.display = 'block';
+        document.getElementById('controlsHint').style.display = 'block';
+
+        // Start Background Audio
+        bgAudio.src = musicTracks[speed] || musicTracks[7];
+        bgAudio.volume = 0.5;
+        bgAudio.play().catch(e => console.log("Audio play blocked by browser policy:", e));
+
+        score = 0;
+        gameOver = false;
+        fallingObjects = [];
+        trail = [];
+        popups = [];
+
+        if (gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(spawnObstacle, 700);
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnObstacle() {
+        if (gameOver) return;
+        const lane = Math.floor(Math.random() * numLanes);
+        const label = gameData.obstacles[Math.floor(Math.random() * gameData.obstacles.length)];
+        fallingObjects.push({ lane, y: -40, label });
+    }
+
+    function pixelBlock(x, y, w, h, color) {
+        ctx.fillStyle = '#1a1240';
+        ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(x, y, w, 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(x, y + h - 4, w, 4);
+    }
+
+    function pixStar(cx, cy, color, cell) {
+        ctx.fillStyle = color;
+        STAR_MAP.forEach((row, j) => {
+            for (let i = 0; i < 7; i++) {
+                if (row[i] === 'y') ctx.fillRect(cx + (i - 3) * cell, cy + (j - 3) * cell, cell, cell);
+            }
+        });
+    }
+
+    function fitLabel(text, maxW) {
+        let size = 20;
+        ctx.font = `${size}px VT323, monospace`;
+        while (ctx.measureText(text).width > maxW && size > 12) {
+            size--;
+            ctx.font = `${size}px VT323, monospace`;
+        }
+        let label = text;
+        if (ctx.measureText(label).width > maxW) {
+            while (label.length > 1 && ctx.measureText(label + '…').width > maxW) label = label.slice(0, -1);
+            label += '…';
+        }
+        return label;
+    }
+
+    function gameLoop() {
+        if (gameOver) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < numLanes; i++) {
+            ctx.fillStyle = laneColors[i];
+            ctx.fillRect(i * laneWidth, 0, laneWidth, canvas.height);
+        }
+
+        scroll = (scroll + obstacleSpeed) % 60;
+        ctx.fillStyle = 'rgba(255,255,255,0.09)';
+        for (let i = 0; i < numLanes; i++) {
+            for (let y = -60 + scroll; y < canvas.height; y += 60) {
+                ctx.fillRect(i * laneWidth + laneWidth / 2 - 3, y, 6, 24);
+            }
+        }
+
+        ctx.fillStyle = '#8a7be0';
+        for (let i = 1; i < numLanes; i++) {
+            for (let y = 0; y < canvas.height; y += 24) ctx.fillRect(i * laneWidth - 2, y, 4, 12);
+        }
+
+        const playerX = currentLane * laneWidth + laneWidth / 2;
+        const playerY = canvas.height - 70;
+
+        trail.push({ x: playerX + (Math.random() - 0.5) * 18, y: playerY + 26, r: 4 + Math.random() * 5, life: 1, c: trailColors[Math.floor(Math.random() * trailColors.length)] });
+        for (let i = trail.length - 1; i >= 0; i--) {
+            const p = trail[i];
+            p.y += obstacleSpeed * 0.6;
+            p.life -= 0.04;
+            if (p.life <= 0) { trail.splice(i, 1); continue; }
+            const s = Math.max(2, Math.round(p.r * p.life));
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = '#1a1240';
+            ctx.fillRect(Math.round(p.x) - s - 2, Math.round(p.y) - s - 2, s * 2 + 4, s * 2 + 4);
+            ctx.fillStyle = p.c;
+            ctx.fillRect(Math.round(p.x) - s, Math.round(p.y) - s, s * 2, s * 2);
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.beginPath();
+        ctx.arc(playerX, playerY + 3, 31, 0, Math.PI * 2);
+        ctx.fillStyle = '#1a1240';
+        ctx.fill();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(playerX, playerY, 25, 0, Math.PI * 2);
+        ctx.clip();
+        if (playerImg.src) {
+            ctx.drawImage(playerImg, playerX - 25, playerY - 25, 50, 50);
+        }
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(playerX, playerY, 27, 0, Math.PI * 2);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#ff5fa8';
+        ctx.stroke();
+
+        for (let i = 0; i < fallingObjects.length; i++) {
+            let obj = fallingObjects[i];
+            obj.y += obstacleSpeed;
+
+            const bw = laneWidth - 12;
+            const bx = obj.lane * laneWidth + 6;
+            pixelBlock(bx, obj.y - 22, bw, 30, blockColors[obj.lane]);
+
+            const label = fitLabel(obj.label, bw - 10);
+            ctx.fillStyle = '#1a1240';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, bx + bw / 2, obj.y - 2);
+            ctx.textAlign = 'start';
+
+            if (obj.lane === currentLane && obj.y > playerY - 35 && obj.y < playerY + 25) {
+                triggerGameOver(obj.label);
+                return;
+            }
+        }
+
+        fallingObjects = fallingObjects.filter(obj => obj.y < canvas.height + 50);
+
+        score++;
+        if (score % 200 === 0) popups.push({ x: playerX, y: playerY - 50, life: 1, text: `${score}!` });
+        ctx.fillStyle = '#1a1240';
+        ctx.fillRect(7, 7, 176, 40);
+        ctx.fillStyle = '#ffd86b';
+        ctx.fillRect(10, 10, 170, 34);
+        ctx.fillStyle = '#c9a02c';
+        ctx.fillRect(10, 40, 170, 4);
+        ctx.fillStyle = '#1a1240';
+        ctx.font = '12px "Press Start 2P", monospace';
+        ctx.fillText(`SCORE ${score}`, 20, 32);
+
+        for (let i = popups.length - 1; i >= 0; i--) {
+            const p = popups[i];
+            p.y -= 1.5;
+            p.life -= 0.02;
+            if (p.life <= 0) { popups.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life;
+            pixStar(p.x - 44, p.y - 6, '#ffd86b', 3);
+            pixStar(p.x + 44, p.y - 6, '#ff5fa8', 3);
+            ctx.font = '14px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#1a1240';
+            ctx.strokeText(p.text, p.x, p.y);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(p.text, p.x, p.y);
+            ctx.textAlign = 'start';
+            ctx.globalAlpha = 1;
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function triggerGameOver(hitItem) {
+        gameOver = true;
+        clearInterval(gameInterval);
+
+        // Stop Audio & Play Sound Effect
+        bgAudio.pause();
+        playCollisionSFX();
+
+        canvas.style.display = 'none';
+        document.getElementById('controlsHint').style.display = 'none';
+        document.getElementById('gameOverPanel').style.display = 'block';
+        document.getElementById('roastText').innerText = `Hit by ${hitItem}! "${gameData.roast}"`;
+    }
+
+    function resetGame() {
+        document.getElementById('gameOverPanel').style.display = 'none';
+        document.getElementById('uploadPanel').style.display = 'block';
+        document.getElementById('statusText').innerText = '';
+        bgAudio.pause();
+        bgAudio.currentTime = 0;
+    }
+</script>
+</body>
+</html>
