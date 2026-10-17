@@ -36,7 +36,6 @@
         }
         .container { max-width: 500px; margin: 0 auto; position: relative; z-index: 2; }
 
-        /* Pixel scene background */
         #scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
         .sp { position: absolute; line-height: 0; }
         .sp svg { display: block; }
@@ -63,7 +62,6 @@
         }
         @media (max-width: 700px) { .tree, .bush { display: none; } }
 
-        /* Hero */
         .hero {
             position: relative;
             background: var(--panel);
@@ -96,7 +94,6 @@
         .pill .cursor { position: absolute; right: -22px; bottom: -34px; line-height: 0; }
         .hero .folder { position: absolute; right: -10px; bottom: -22px; line-height: 0; transform: rotate(4deg); }
 
-        /* Cards */
         .card {
             background: var(--panel);
             color: var(--panel-ink);
@@ -133,13 +130,24 @@
             cursor: pointer;
         }
 
+        input[type="text"] {
+            padding: 10px;
+            width: 70%;
+            border-radius: 8px;
+            border: 2px solid var(--panel-ink);
+            background: #efe8ff;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            color: var(--panel-ink);
+        }
+
         button {
             background: var(--pink);
             color: #fff;
             border: 3px solid #4b1442;
-            padding: 14px 20px;
+            padding: 12px 18px;
             font-family: 'Press Start 2P', monospace;
-            font-size: .65rem;
+            font-size: .62rem;
             line-height: 1.6;
             border-radius: 12px;
             cursor: pointer;
@@ -162,7 +170,6 @@
         @keyframes shake { 0%,100% { translate: 0; } 20% { translate: -8px 0; } 40% { translate: 8px 0; } 60% { translate: -6px 0; } 80% { translate: 6px 0; } }
         #roastText { background: var(--panel); color: var(--panel-ink); border-radius: 12px; padding: 14px; }
 
-        /* Game Canvas */
         #gameCanvas {
             display: none;
             background: var(--night-deep);
@@ -218,25 +225,15 @@
             100% { opacity: 0; transform: translateY(-50px); }
         }
 
-        .shoot { width: 12px; height: 12px; opacity: 0; animation: shoot 9s linear infinite; }
-        .shoot::before { content: ""; position: absolute; right: 60%; top: 50%; width: 70px; height: 3px; margin-top: -1px; background: linear-gradient(to left, #ffd86b, transparent); transform-origin: right center; rotate: 30deg; }
-        .shoot-1 { top: 8%;  left: 12%; }
-        .shoot-2 { top: 20%; left: 55%; animation-duration: 12s; animation-delay: -4s; }
-        .shoot-3 { top: 5%;  left: 78%; animation-duration: 15s; animation-delay: -7s; }
-        @keyframes shoot {
-            0% { opacity: 0; transform: translate(0, 0); }
-            2% { opacity: 1; }
-            14% { opacity: 1; transform: translate(240px, 138px); }
-            16%, 100% { opacity: 0; transform: translate(240px, 138px); }
+        .spotify-frame {
+            border-radius: 12px;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
 
-<!-- Audio Player Element -->
-<audio id="bgMusic" loop crossorigin="anonymous"></audio>
-
-<!-- Pixel night scene -->
+<!-- Pixel scene -->
 <div id="scene">
     <div class="sp moon"    data-sprite="moon"  data-px="6"></div>
     <div class="sp cloud cloud-a" data-sprite="cloud" data-px="6"></div>
@@ -276,11 +273,24 @@
         <p id="statusText"></p>
     </div>
 
-    <!-- STEP 2: MUSIC SELECT -->
+    <!-- STEP 2: MUSIC SELECT & SPOTIFY SEARCH -->
     <div id="musicPanel" class="card">
         <h2 id="charTitle"></h2>
-        <h3>2. Select Your Music Pace:</h3>
+        <h3>🎵 3 Image Vibe Track Recommendations:</h3>
         <div id="musicButtons"></div>
+
+        <hr style="border-color: #6b58c9; margin: 20px 0;">
+
+        <h3>🔍 Or Search Any Song on Spotify:</h3>
+        <input type="text" id="spotifyQuery" placeholder="Type artist or song title..." />
+        <button onclick="searchSpotifyTrack()">Search</button>
+
+        <div id="spotifyEmbedContainer" style="margin-top: 15px; display: none;">
+            <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+            <br>
+            <p style="font-size: 0.8rem; margin: 4px 0 8px; color: var(--panel-ink);">💡 <b>Tip:</b> Click ▶ inside Spotify player first to start music!</p>
+            <button onclick="startSpotifyGame()" style="background: var(--mint); color: var(--outline);">Play Game with this Song!</button>
+        </div>
     </div>
 
     <!-- STEP 3: GAME CANVAS -->
@@ -393,21 +403,14 @@
         });
     })();
 
-    /* Game Engine & Audio */
+    /* Game Engine & Spotify Setup */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const bgAudio = document.getElementById('bgMusic');
 
     let base64Image = "";
     let gameData = null;
     let playerImg = new Image();
-
-    // Royalty-Free Audio Tracks
-    const musicTracks = {
-        4: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3", // Chill Synthwave
-        7: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3", // Campus Pop
-        11: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3"  // Cyberpunk Rush
-    };
+    let selectedBpm = 7;
 
     const numLanes = 4;
     const laneWidth = canvas.width / numLanes;
@@ -438,30 +441,76 @@
 
     async function uploadAndAnalyze() {
         if (!base64Image) return alert("Please select an image first!");
-        document.getElementById('statusText').innerText = "Reading your vibe...";
+        document.getElementById('statusText').innerText = "Gemma 4 is reading image vibe...";
 
-        const response = await fetch('/api/analyze-character', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageBase64: base64Image })
-        });
+        try {
+            const response = await fetch('/api/analyze-character', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64Image })
+            });
 
-        const data = await response.json();
-        if (!data.success) return alert("Error processing image.");
+            const data = await response.json();
+            if (!data.success) return alert("Error processing image.");
 
-        gameData = data.gameData;
-        document.getElementById('uploadPanel').style.display = 'none';
-        document.getElementById('musicPanel').style.display = 'block';
-        document.getElementById('charTitle').innerText = `Character: ${gameData.characterName}`;
+            gameData = data.gameData;
+            document.getElementById('uploadPanel').style.display = 'none';
+            document.getElementById('musicPanel').style.display = 'block';
 
-        const btnContainer = document.getElementById('musicButtons');
-        btnContainer.innerHTML = '';
-        gameData.musicOptions.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.innerText = `${opt.genre} (${opt.description})`;
-            btn.onclick = () => startGame(opt.bpmSpeed);
-            btnContainer.appendChild(btn);
-        });
+            // Display Character Name & Detected Vibe Badge
+            document.getElementById('charTitle').innerHTML = `Character: ${gameData.characterName} <br><span style="font-size:0.7em; background:var(--pink); color:#fff; padding:4px 10px; border-radius:8px; display:inline-block; margin-top:6px;">Detected Vibe: ${gameData.vibeBadge}</span>`;
+
+            // Render 3 Image-Based Recommendations
+            const btnContainer = document.getElementById('musicButtons');
+            btnContainer.innerHTML = '';
+            gameData.musicOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.innerText = `🎵 ${opt.genre}: ${opt.description}`;
+                btn.onclick = () => {
+                    selectedBpm = opt.bpmSpeed;
+                    loadSpotifyPlayer(opt.spotifyTrackId || "0Vj2y1A13Vi48CoI3NeP8f");
+                };
+                btnContainer.appendChild(btn);
+            });
+        } catch (err) {
+            console.error("Upload error:", err);
+            alert("Error analyzing image.");
+        } finally {
+            document.getElementById('statusText').innerText = "";
+        }
+    }
+
+    function loadSpotifyPlayer(trackId) {
+        const iframe = document.getElementById('spotifyPlayer');
+        iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
+        document.getElementById('spotifyEmbedContainer').style.display = 'block';
+    }
+
+    async function searchSpotifyTrack() {
+        const q = document.getElementById('spotifyQuery').value.trim();
+        if (!q) return alert("Enter song title or artist!");
+
+        document.getElementById('statusText').innerText = "Searching Spotify...";
+
+        try {
+            const res = await fetch(`/api/spotify/search?query=${encodeURIComponent(q)}`);
+            const data = await res.json();
+
+            if (data.success && data.spotifyTrackId) {
+                loadSpotifyPlayer(data.spotifyTrackId);
+            } else {
+                loadSpotifyPlayer("0Vj2y1A13Vi48CoI3NeP8f");
+            }
+        } catch (err) {
+            console.error("Search error:", err);
+            loadSpotifyPlayer("0Vj2y1A13Vi48CoI3NeP8f");
+        } finally {
+            document.getElementById('statusText').innerText = "";
+        }
+    }
+
+    function startSpotifyGame() {
+        startGame(selectedBpm);
     }
 
     document.addEventListener('keydown', (e) => {
@@ -475,38 +524,11 @@
         else { if (currentLane < numLanes - 1) currentLane++; }
     });
 
-    // Web Audio Impact SFX
-    function playCollisionSFX() {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.3);
-
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.3);
-        } catch (e) { console.log(e); }
-    }
-
     function startGame(speed) {
         obstacleSpeed = speed;
         document.getElementById('musicPanel').style.display = 'none';
         canvas.style.display = 'block';
         document.getElementById('controlsHint').style.display = 'block';
-
-        // Start Background Audio
-        bgAudio.src = musicTracks[speed] || musicTracks[7];
-        bgAudio.volume = 0.5;
-        bgAudio.play().catch(e => console.log("Audio play blocked by browser policy:", e));
 
         score = 0;
         gameOver = false;
@@ -680,10 +702,6 @@
         gameOver = true;
         clearInterval(gameInterval);
 
-        // Stop Audio & Play Sound Effect
-        bgAudio.pause();
-        playCollisionSFX();
-
         canvas.style.display = 'none';
         document.getElementById('controlsHint').style.display = 'none';
         document.getElementById('gameOverPanel').style.display = 'block';
@@ -694,8 +712,6 @@
         document.getElementById('gameOverPanel').style.display = 'none';
         document.getElementById('uploadPanel').style.display = 'block';
         document.getElementById('statusText').innerText = '';
-        bgAudio.pause();
-        bgAudio.currentTime = 0;
     }
 </script>
 </body>
