@@ -33,9 +33,10 @@ const VIBE_CATEGORIES = {
     "ROMANTIC": { query: "bollywood romantic hits", bpmSpeed: 6, badge: "ROMANTIC ❤️" }
 };
 
-// Helper: Query Spotify API for live genre tracks
+// Helper: Query Spotify API directly for live genre tracks
 async function fetchGenreTracksFromSpotify(vibeKey) {
     const category = VIBE_CATEGORIES[vibeKey] || VIBE_CATEGORIES["FUN"];
+
     try {
         const token = await getSpotifyAccessToken();
         if (token) {
@@ -46,22 +47,108 @@ async function fetchGenreTracksFromSpotify(vibeKey) {
             if (data.tracks?.items?.length >= 3) {
                 const shuffled = data.tracks.items.sort(() => 0.5 - Math.random()).slice(0, 3);
                 return shuffled.map(track => ({
-                    genre: `${vibeKey} Match`,
+                    genre: `${vibeKey} - Spotify Match`,
                     bpmSpeed: category.bpmSpeed,
                     description: `${track.name} by ${track.artists[0]?.name}`,
-                    spotifyTrackId: track.id
+                    spotifyTrackId: track.id,
+                    previewUrl: track.preview_url || null
                 }));
             }
         }
     } catch (err) {
-        console.warn("Spotify catalog query failed:", err.message);
+        console.warn("Spotify catalog query failed, using default track IDs:", err.message);
     }
 
+    // Fallback track list
     return [
         { genre: `${vibeKey} - Track 1`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 1`, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" },
         { genre: `${vibeKey} - Track 2`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 2`, spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT" },
         { genre: `${vibeKey} - Track 3`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 3`, spotifyTrackId: "60nZ122Pm911yO31912I5M" }
     ];
+}
+
+// Default obstacles with stickers/emojis
+const DEFAULT_OBSTACLES = [
+    { name: "Flying Pumpkin", emoji: "🎃" },
+    { name: "Hostel Bed", emoji: "🛏️" },
+    { name: "Salty Tomato", emoji: "🍅" },
+    { name: "Hot Samosa", emoji: "🥟" }
+];
+
+function resolveObstacleEmoji(name, vibe = "FUN") {
+    if (!name || typeof name !== 'string') return "⚡";
+    const lower = name.toLowerCase();
+
+    if (lower.includes('pumpkin') || lower.includes('halloween')) return "🎃";
+    if (lower.includes('bed') || lower.includes('pillow') || lower.includes('mattress')) return "🛏️";
+    if (lower.includes('tomato')) return "🍅";
+    if (lower.includes('samosa') || lower.includes('dumpling') || lower.includes('pakora')) return "🥟";
+    if (lower.includes('pizza')) return "🍕";
+    if (lower.includes('burger')) return "🍔";
+    if (lower.includes('coffee') || lower.includes('chai') || lower.includes('tea') || lower.includes('mug')) return "☕";
+    if (lower.includes('book') || lower.includes('textbook') || lower.includes('study') || lower.includes('notes')) return "📚";
+    if (lower.includes('exam') || lower.includes('paper') || lower.includes('pen') || lower.includes('pencil')) return "📝";
+    if (lower.includes('laptop') || lower.includes('computer') || lower.includes('screen') || lower.includes('code')) return "💻";
+    if (lower.includes('phone') || lower.includes('mobile')) return "📱";
+    if (lower.includes('shoe') || lower.includes('sneaker') || lower.includes('boot')) return "👟";
+    if (lower.includes('dumbbell') || lower.includes('weight') || lower.includes('gym')) return "🏋️";
+    if (lower.includes('beer') || lower.includes('drink') || lower.includes('alcohol') || lower.includes('bottle')) return "🍺";
+    if (lower.includes('cocktail') || lower.includes('wine') || lower.includes('glass')) return "🍸";
+    if (lower.includes('disco') || lower.includes('ball')) return "🪩";
+    if (lower.includes('party') || lower.includes('confetti') || lower.includes('popper')) return "🎉";
+    if (lower.includes('guitar') || lower.includes('music') || lower.includes('instrument')) return "🎸";
+    if (lower.includes('headphone') || lower.includes('earphone')) return "🎧";
+    if (lower.includes('mic') || lower.includes('microphone')) return "🎤";
+    if (lower.includes('ghost')) return "👻";
+    if (lower.includes('skull') || lower.includes('skeleton')) return "💀";
+    if (lower.includes('alien') || lower.includes('ufo')) return "👽";
+    if (lower.includes('cat') || lower.includes('kitten')) return "🐱";
+    if (lower.includes('dog') || lower.includes('puppy') || lower.includes('doge')) return "🐶";
+    if (lower.includes('poop')) return "💩";
+    if (lower.includes('fire') || lower.includes('flame') || lower.includes('hot')) return "🔥";
+    if (lower.includes('bomb') || lower.includes('tnt')) return "💣";
+    if (lower.includes('heart') || lower.includes('love')) return "💖";
+    if (lower.includes('tear') || lower.includes('cry') || lower.includes('tissue')) return "😭";
+    if (lower.includes('clock') || lower.includes('alarm') || lower.includes('watch')) return "⏰";
+    if (lower.includes('car') || lower.includes('bus') || lower.includes('truck')) return "🚗";
+    if (lower.includes('banana')) return "🍌";
+    if (lower.includes('donut') || lower.includes('doughnut')) return "🍩";
+    if (lower.includes('cake')) return "🎂";
+    if (lower.includes('cactus')) return "🌵";
+    if (lower.includes('money') || lower.includes('cash') || lower.includes('dollar')) return "💵";
+    if (lower.includes('shades') || lower.includes('sunglasses')) return "🕶️";
+
+    const vibeFallbacks = {
+        "PARTY": ["🪩", "🎉", "🍹", "🕶️"],
+        "SAD": ["🌧️", "💔", "🧻", "🥀"],
+        "FUN": ["🎈", "🛹", "🍌", "🍕"],
+        "CHILL": ["☕", "🛋️", "🌴", "🎧"],
+        "WORKOUT": ["🏋️", "🥊", "🥑", "⚡"],
+        "ROMANTIC": ["🌹", "💌", "🍫", "💖"]
+    };
+    const list = vibeFallbacks[vibe] || vibeFallbacks["FUN"];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = (hash + name.charCodeAt(i)) % list.length;
+    return list[hash];
+}
+
+function normalizeObstacles(obstacles, vibe = "FUN") {
+    if (!Array.isArray(obstacles) || obstacles.length === 0) return DEFAULT_OBSTACLES;
+    return obstacles.slice(0, 4).map(item => {
+        if (typeof item === 'string') {
+            return {
+                name: item,
+                emoji: resolveObstacleEmoji(item, vibe)
+            };
+        } else if (item && typeof item === 'object') {
+            const name = item.name || item.label || "Obstacle";
+            return {
+                name: name,
+                emoji: item.emoji || resolveObstacleEmoji(name, vibe)
+            };
+        }
+        return { name: "Mystery Item", emoji: "🎁" };
+    });
 }
 
 // Gemma 4 Image Analysis Endpoint
@@ -81,7 +168,12 @@ app.post('/api/analyze-character', async (req, res) => {
       {
         "vibeCategory": "SAD" | "PARTY" | "FUN" | "CHILL" | "WORKOUT" | "ROMANTIC",
         "characterName": "Funny 2-word title based on image",
-        "obstacles": ["4 funny obstacles related to room/background"],
+        "obstacles": [
+          { "name": "Absurd physical obstacle 1 found/related to room", "emoji": "matching single emoji" },
+          { "name": "Absurd physical obstacle 2 found/related to room", "emoji": "matching single emoji" },
+          { "name": "Absurd physical obstacle 3 found/related to room", "emoji": "matching single emoji" },
+          { "name": "Absurd physical obstacle 4 found/related to room", "emoji": "matching single emoji" }
+        ],
         "roast": "1 sentence funny roast"
       }
     `;
@@ -112,6 +204,7 @@ app.post('/api/analyze-character', async (req, res) => {
         const assignedVibe = parsedData.vibeCategory ? parsedData.vibeCategory.toUpperCase() : "FUN";
 
         const dynamicSongs = await fetchGenreTracksFromSpotify(assignedVibe);
+        const finalObstacles = normalizeObstacles(parsedData.obstacles, assignedVibe);
 
         res.json({
             success: true,
@@ -119,7 +212,7 @@ app.post('/api/analyze-character', async (req, res) => {
                 vibeCategory: assignedVibe,
                 vibeBadge: VIBE_CATEGORIES[assignedVibe]?.badge || "FUN 🥳",
                 characterName: parsedData.characterName || "Vibe Runner",
-                obstacles: parsedData.obstacles || ["Flying Pumpkin", "Hostel Bed", "Salty Tomato", "Samosa"],
+                obstacles: finalObstacles,
                 musicOptions: dynamicSongs,
                 roast: parsedData.roast || "You got completely flattened!"
             }
@@ -134,7 +227,7 @@ app.post('/api/analyze-character', async (req, res) => {
                 vibeCategory: "FUN",
                 vibeBadge: "FUN 🥳",
                 characterName: "Backup Speedster",
-                obstacles: ["Flying Pumpkin", "Hostel Bed", "Salty Tomato", "Hot Samosa"],
+                obstacles: DEFAULT_OBSTACLES,
                 musicOptions: fallbackSongs,
                 roast: "Network lag caught you before the flying bed did!"
             }
@@ -158,6 +251,7 @@ io.on('connection', (socket) => {
                 players: {},
                 gameStarted: false,
                 trackId: "0Vj2y1A13Vi48CoI3NeP8f",
+                trackName: "Vibe Track 1",
                 speed: 7
             };
         }
@@ -172,7 +266,7 @@ io.on('connection', (socket) => {
             image: playerImage,
             name: characterName || 'Player',
             isHost: isHost,
-            isReady: isHost ? true : false, // Host is ready by default
+            isReady: isHost ? true : false,
             isDead: false
         };
 
@@ -189,12 +283,17 @@ io.on('connection', (socket) => {
     });
 
     // Host selects song & syncs to opponent
-    socket.on('selectTrack', ({ roomId, trackId, speed }) => {
+    socket.on('selectTrack', ({ roomId, trackId, speed, trackName }) => {
         const room = activeRooms[roomId];
         if (room) {
             room.trackId = trackId;
             room.speed = speed;
-            io.to(roomId).emit('trackSelected', { trackId, speed });
+            room.trackName = trackName || "Spotify Beat";
+            io.to(roomId).emit('trackSelected', {
+                trackId,
+                speed,
+                trackName: room.trackName
+            });
         }
     });
 

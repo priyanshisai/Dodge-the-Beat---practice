@@ -1,7 +1,9 @@
 // controllers/spotifyController.js
+
 let spotifyAccessToken = '';
 let tokenExpirationTime = 0;
 
+// Fetch Client Credentials Access Token from Spotify
 async function getSpotifyAccessToken() {
     const now = Date.now();
     if (spotifyAccessToken && now < tokenExpirationTime) {
@@ -37,17 +39,21 @@ async function getSpotifyAccessToken() {
     throw new Error("Failed to retrieve Spotify access token");
 }
 
+// Controller Method: Search Spotify Tracks
 exports.searchTrack = async (req, res) => {
     try {
         const { query } = req.query;
-        if (!query) return res.status(400).json({ success: false, error: 'Query parameter required.' });
+        if (!query) {
+            return res.status(400).json({ success: false, error: 'Query parameter required.' });
+        }
 
         const token = await getSpotifyAccessToken();
+
         if (!token) {
             return res.json({
                 success: true,
                 spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f",
-                warning: "Spotify credentials missing in .env. Using fallback."
+                warning: "Spotify API credentials missing in .env. Using fallback track."
             });
         }
 
@@ -63,7 +69,8 @@ exports.searchTrack = async (req, res) => {
             return res.json({
                 success: true,
                 spotifyTrackId: track.id,
-                trackName: `${track.name} - ${track.artists.map(a => a.name).join(', ')}`
+                trackName: `${track.name} - ${track.artists.map(a => a.name).join(', ')}`,
+                previewUrl: track.preview_url || null
             });
         }
 
