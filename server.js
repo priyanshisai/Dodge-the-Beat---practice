@@ -47,7 +47,7 @@ async function fetchGenreTracksFromSpotify(vibeKey) {
             if (data.tracks?.items?.length >= 3) {
                 const shuffled = data.tracks.items.sort(() => 0.5 - Math.random()).slice(0, 3);
                 return shuffled.map(track => ({
-                    genre: `${vibeKey} - Spotify Match`,
+                    genre: `${vibeKey} Spotify Match`,
                     bpmSpeed: category.bpmSpeed,
                     description: `${track.name} by ${track.artists[0]?.name}`,
                     spotifyTrackId: track.id,
@@ -61,9 +61,9 @@ async function fetchGenreTracksFromSpotify(vibeKey) {
 
     // Fallback track list
     return [
-        { genre: `${vibeKey} - Track 1`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 1`, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" },
-        { genre: `${vibeKey} - Track 2`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 2`, spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT" },
-        { genre: `${vibeKey} - Track 3`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 3`, spotifyTrackId: "60nZ122Pm911yO31912I5M" }
+        { genre: `${vibeKey} Track 1`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 1`, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" },
+        { genre: `${vibeKey} Track 2`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 2`, spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT" },
+        { genre: `${vibeKey} Track 3`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 3`, spotifyTrackId: "60nZ122Pm911yO31912I5M" }
     ];
 }
 

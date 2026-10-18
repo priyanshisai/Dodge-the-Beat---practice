@@ -53,6 +53,7 @@ exports.searchTrack = async (req, res) => {
             return res.json({
                 success: true,
                 spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f",
+                trackName: "Fallback Track (Add SPOTIFY_CLIENT_ID to .env)",
                 warning: "Spotify API credentials missing in .env. Using fallback track."
             });
         }
@@ -74,11 +75,19 @@ exports.searchTrack = async (req, res) => {
             });
         }
 
-        res.json({ success: true, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" });
+        res.json({
+            success: true,
+            spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f",
+            trackName: `No results found for "${query}"`
+        });
 
     } catch (error) {
         console.error("Spotify Search Controller Error:", error);
-        res.json({ success: true, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" });
+        res.json({
+            success: true,
+            spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f",
+            trackName: "Error loading Spotify track"
+        });
     }
 };
 
