@@ -392,6 +392,7 @@
 
         <h3>🎵 Image Vibe Track Recommendations:</h3>
         <p style="font-size: 1.1rem; margin: -4px 0 10px; color: var(--panel-ink);">Click any song below to vibe with your image:</p>
+        <p style="font-size: 1.1rem; margin: 0 0 10px; color: var(--pink-dark); font-weight: bold;">👇 Press ▶ on the Spotify player below once, so the song can play during the game!</p>
         <div id="musicButtons"></div>
 
         <hr style="border-color: #6b58c9; margin: 18px 0;">
@@ -590,7 +591,7 @@
         const element = document.getElementById('spotifyPlayer');
         if (!element) return;
         try {
-            IFrameAPI.createController(element, { uri: 'spotify:track:0Vj2y1A13Vi48CoI3NeP8f' }, (EmbedController) => {
+            IFrameAPI.createController(element, { uri: 'spotify:track:' + (loadedTrackId || '0Vj2y1A13Vi48CoI3NeP8f') }, (EmbedController) => {
                 spotifyEmbedController = EmbedController;
                 spotifyEmbedController.addListener('playback_update', e => {
                     if (!e.data.isPaused && soundMode === 'both') stopSynthBeat();
@@ -667,6 +668,9 @@
 
     socket.on('gameStart', ({ speed }) => {
         startAudioPlayback();
+        setTimeout(() => {
+            if (spotifyEmbedController) { try { spotifyEmbedController.resume(); } catch(e){} }
+        }, 400);
         document.getElementById('shareBanner').style.display = 'none';
         document.getElementById('uploadPanel').style.display = 'none';
         document.getElementById('musicPanel').style.display = 'none';
@@ -851,6 +855,7 @@
 
             document.getElementById('uploadPanel').style.display = 'none';
             document.getElementById('musicPanel').style.display = 'block';
+            document.getElementById('gameMusicHUD').style.display = 'block'; // show Spotify player in lobby so the user can press play once
 
             document.getElementById('charTitle').innerHTML = `Character: ${gameData.characterName} <br><span style="font-size:0.7em; background:var(--pink); color:#fff; padding:4px 10px; border-radius:8px; display:inline-block; margin-top:6px;">Vibe: ${gameData.vibeBadge}</span>`;
 
@@ -897,27 +902,26 @@
         regainGameFocus(evt);
     }
 
+    let loadedTrackId = null;
+
     function loadSpotifyPlayer(trackId, title) {
-        const iframe = document.getElementById('spotifyPlayer');
         const trackTitle = title || currentSelectedTrack?.description || "Syncing Music...";
 
         const hudTitle = document.getElementById('hudTrackTitle');
         if (hudTitle) hudTitle.innerText = trackTitle;
+        const selName = document.getElementById('selectedTrackName');
+        if (selName) selName.innerText = `🎵 ${trackTitle}`;
 
-        if (document.getElementById('selectedTrackName')) {
-            document.getElementById('selectedTrackName').innerText = `🎵 ${trackTitle}`;
-        }
-
-        if (iframe) {
-            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
-        }
+        // Same song? Do nothing (stops the constant reloading that interrupted the music)
+        if (trackId === loadedTrackId) return;
+        loadedTrackId = trackId;
 
         if (spotifyEmbedController) {
-            try {
-                spotifyEmbedController.loadUri(`spotify:track:${trackId}`);
-            } catch(e) {
-                console.log("Spotify controller load error:", e);
-            }
+            try { spotifyEmbedController.loadUri(`spotify:track:${trackId}`); } catch (e) { console.log("Spotify controller load error:", e); }
+        } else {
+            // Fallback only if the Spotify iFrame API hasn't loaded yet
+            const iframe = document.getElementById('spotifyPlayer');
+            if (iframe) iframe.src = `https://open.spotify.com/embed/track/${trackId}`;
         }
     }
 
@@ -1105,6 +1109,16 @@
     let gameOver = false;
     let fallingObjects = [];
     let gameInterval = null;
+
+    // When the user clicks inside the Spotify iframe, give keyboard focus back to the game
+    window.addEventListener('blur', () => {
+        setTimeout(() => {
+            if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                document.activeElement.blur();
+                regainGameFocus();
+            }
+        }, 0);
+    });
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft' || e.key === 'a') if (currentLane > 0) currentLane--;

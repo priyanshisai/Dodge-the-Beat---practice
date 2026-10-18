@@ -11,7 +11,8 @@ const { getSpotifyAccessToken } = require('./controllers/spotifyController');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
+    cors: { origin: "*", methods: ["GET", "POST"] },
+    maxHttpBufferSize: 10e6 // allow bigger player photos (10 MB) over the socket
 });
 
 app.use(cors());
@@ -285,7 +286,8 @@ io.on('connection', (socket) => {
     // Host selects song & syncs to opponent
     socket.on('selectTrack', ({ roomId, trackId, speed, trackName }) => {
         const room = activeRooms[roomId];
-        if (room) {
+        // Only the HOST can change the song (stops the guest's auto-pick from overriding it)
+        if (room && room.players[socket.id]?.isHost) {
             room.trackId = trackId;
             room.speed = speed;
             room.trackName = trackName || "Spotify Beat";
