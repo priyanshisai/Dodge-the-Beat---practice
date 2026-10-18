@@ -558,6 +558,7 @@
     let opponentScore = 0;
     let isHostPlayer = false;
     let currentSelectedTrack = null;
+    let startTime = 0;
 
     /* Spotify Controller & Audio Context */
     let spotifyEmbedController = null;
@@ -642,12 +643,17 @@
             }
         }
 
-        if (room.trackId) loadSpotifyPlayer(room.trackId);
+        if (room.trackId) loadSpotifyPlayer(room.trackId, room.trackName);
     });
 
-    socket.on('trackSelected', ({ trackId, speed }) => {
+    socket.on('trackSelected', ({ trackId, speed, trackName }) => {
         selectedBpm = speed;
-        loadSpotifyPlayer(trackId);
+        if (currentSelectedTrack) {
+            currentSelectedTrack.description = trackName;
+        } else {
+            currentSelectedTrack = { description: trackName, spotifyTrackId: trackId, bpmSpeed: speed };
+        }
+        loadSpotifyPlayer(trackId, trackName);
     });
 
     socket.on('gameStart', ({ speed }) => {
@@ -870,33 +876,60 @@
             document.getElementById('selectedTrackBpm').innerText = selectedBpm;
         }
 
-        socket.emit('selectTrack', { roomId, trackId: opt.spotifyTrackId, speed: opt.bpmSpeed });
+        socket.emit('selectTrack', {
+            roomId,
+            trackId: opt.spotifyTrackId,
+            speed: opt.bpmSpeed,
+            trackName: opt.description || opt.genre
+        });
     }
 
-    function loadSpotifyPlayer(trackId) {
+    function loadSpotifyPlayer(trackId, title) {
         const iframe = document.getElementById('spotifyPlayer');
-        if (hudTitle = document.getElementById('hudTrackTitle')) {
-            hudTitle.innerText = currentSelectedTrack?.description || "Syncing Music...";
+        const trackTitle = title || currentSelectedTrack?.description || "Syncing Music...";
+
+        const hudTitle = document.getElementById('hudTrackTitle');
+        if (hudTitle) hudTitle.innerText = trackTitle;
+
+        if (document.getElementById('selectedTrackName')) {
+            document.getElementById('selectedTrackName').innerText = `🎵 ${trackTitle}`;
         }
+
+        if (iframe) {
+            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
+        }
+
         if (spotifyEmbedController) {
-            try { spotifyEmbedController.loadUri(`spotify:track:${trackId}`); }
-            catch(e) { if (iframe) iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`; }
-        } else if (iframe) {
-            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+            try {
+                spotifyEmbedController.loadUri(`spotify:track:${trackId}`);
+            } catch(e) {
+                console.log("Spotify controller load error:", e);
+            }
         }
     }
 
     async function searchSpotifyTrack() {
         const q = document.getElementById('spotifyQuery').value.trim();
         if (!q) return;
-        const res = await fetch(`/api/spotify/search?query=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        if (data.success && data.spotifyTrackId) {
-            const customTrack = {
-                genre: "Search Match", bpmSpeed: selectedBpm || 8,
-                description: data.trackName || q, spotifyTrackId: data.spotifyTrackId
-            };
-            selectSong(customTrack, null);
+
+        document.getElementById('statusText').innerText = "Searching Spotify...";
+
+        try {
+            const res = await fetch(`/api/spotify/search?query=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if (data.success && data.spotifyTrackId) {
+                const searchedTrack = {
+                    genre: "Search Match",
+                    bpmSpeed: selectedBpm || 8,
+                    description: data.trackName || q,
+                    spotifyTrackId: data.spotifyTrackId
+                };
+                selectSong(searchedTrack, null);
+            }
+        } catch (err) {
+            console.error("Search error:", err);
+        } finally {
+            document.getElementById('statusText').innerText = "";
         }
     }
 
@@ -1062,6 +1095,7 @@
     function startGame(speed) {
         obstacleSpeed = speed;
         score = 0;
+        startTime = Date.now();
         gameOver = false;
         fallingObjects = [];
 
@@ -1142,7 +1176,9 @@
 
         fallingObjects = fallingObjects.filter(obj => obj.y < canvas.height + 50);
 
-        score++;
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        score = Math.floor(elapsedTime * 10);
+
         socket.emit('updateScore', { roomId, score });
 
         ctx.fillStyle = '#ffd86b';
