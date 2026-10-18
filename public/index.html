@@ -407,16 +407,16 @@
                 🎵 Selected Track
             </div>
             <p style="font-size: 0.95rem; margin: 0 0 12px; color: var(--panel-ink);">
-                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music plays live during your run!
+                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music starts automatically!
             </p>
 
             <!-- Host Controls -->
-            <button id="hostStartBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;" disabled>
+            <button id="hostStartBtn" onclick="requestStartGame(event)" style="background: var(--mint); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;" disabled>
                 Waiting for Opponent to Ready Up...
             </button>
 
             <!-- Guest Controls -->
-            <button id="guestReadyBtn" onclick="sendReadySignal()" style="background: var(--gold); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;">
+            <button id="guestReadyBtn" onclick="sendReadySignal(event)" style="background: var(--gold); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;">
                 I'm Ready!
             </button>
         </div>
@@ -437,14 +437,14 @@
         </div>
 
         <div class="music-hud-controls">
-            <button type="button" id="btnSoundMode" onclick="cycleSoundMode()" class="hud-btn">
+            <button type="button" id="btnSoundMode" onclick="cycleSoundMode(event)" class="hud-btn">
                 🔊 Sound: <span id="soundModeLabel">Spotify + Beat</span>
             </button>
-            <button type="button" id="btnMuteAudio" onclick="toggleMuteAudio()" class="hud-btn">
+            <button type="button" id="btnMuteAudio" onclick="toggleMuteAudio(event)" class="hud-btn">
                 🔊 Mute
             </button>
-            <button type="button" id="btnKickstart" onclick="kickstartSpotifyAudio()" class="hud-btn hud-btn-accent">
-                ▶ Click If Paused
+            <button type="button" id="btnKickstart" onclick="kickstartSpotifyAudio(event)" class="hud-btn hud-btn-accent">
+                ▶ Re-focus Game
             </button>
         </div>
     </div>
@@ -452,7 +452,7 @@
     <audio id="previewAudio" loop></audio>
 
     <!-- STEP 3: GAME CANVAS -->
-    <canvas id="gameCanvas" width="400" height="550"></canvas>
+    <canvas id="gameCanvas" width="400" height="550" tabindex="1"></canvas>
     <p id="controlsHint">Move: <span class="key">A</span><span class="key">D</span> or <span class="key">&larr;</span><span class="key">&rarr;</span></p>
 
     <!-- STEP 4: SYNCHRONIZED GAME OVER PANEL -->
@@ -577,6 +577,15 @@
         return audioCtx;
     }
 
+    function regainGameFocus(evt) {
+        if (evt && evt.target && typeof evt.target.blur === 'function') {
+            evt.target.blur();
+        }
+        window.focus();
+        const cvs = document.getElementById('gameCanvas');
+        if (cvs) cvs.focus();
+    }
+
     window.onSpotifyIframeApiReady = (IFrameAPI) => {
         const element = document.getElementById('spotifyPlayer');
         if (!element) return;
@@ -665,6 +674,8 @@
         document.getElementById('gameMusicHUD').style.display = 'block';
         canvas.style.display = 'block';
         document.getElementById('controlsHint').style.display = 'block';
+
+        regainGameFocus();
         startGame(speed);
     });
 
@@ -851,7 +862,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'track-select-btn';
                 btn.innerText = `🎵 ${opt.genre}: ${opt.description}`;
-                btn.onclick = () => selectSong(opt, btn);
+                btn.onclick = (evt) => selectSong(opt, btn, evt);
                 btnContainer.appendChild(btn);
                 if (idx === 0) selectSong(opt, btn);
             });
@@ -862,7 +873,7 @@
         }
     }
 
-    function selectSong(opt, btnElement) {
+    function selectSong(opt, btnElement, evt) {
         currentSelectedTrack = opt;
         selectedBpm = opt.bpmSpeed || 7;
 
@@ -882,6 +893,8 @@
             speed: opt.bpmSpeed,
             trackName: opt.description || opt.genre
         });
+
+        regainGameFocus(evt);
     }
 
     function loadSpotifyPlayer(trackId, title) {
@@ -933,13 +946,17 @@
         }
     }
 
-    function sendReadySignal() {
+    function sendReadySignal(evt) {
+        getAudioContext();
         socket.emit('playerReady', { roomId });
+        regainGameFocus(evt);
     }
 
-    function requestStartGame() {
+    function requestStartGame(evt) {
         if (!base64Image) return alert("Upload your photo first!");
+        getAudioContext();
         socket.emit('startGame', { roomId });
+        regainGameFocus(evt);
     }
 
     function startAudioPlayback() {
@@ -950,13 +967,14 @@
         }
     }
 
-    function kickstartSpotifyAudio() {
+    function kickstartSpotifyAudio(evt) {
         getAudioContext();
         if (spotifyEmbedController) { try { spotifyEmbedController.play(); } catch(e){} }
         if (!beatInterval && !isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
+        regainGameFocus(evt);
     }
 
-    function cycleSoundMode() {
+    function cycleSoundMode(evt) {
         if (soundMode === 'both') {
             soundMode = 'synth';
             document.getElementById('soundModeLabel').innerText = '🕹️ 8-Bit Beat Only';
@@ -973,9 +991,10 @@
             if (!isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
             kickstartSpotifyAudio();
         }
+        regainGameFocus(evt);
     }
 
-    function toggleMuteAudio() {
+    function toggleMuteAudio(evt) {
         isMuted = !isMuted;
         document.getElementById('btnMuteAudio').innerText = isMuted ? '🔇 Unmute' : '🔊 Mute';
         if (isMuted) {
@@ -984,6 +1003,7 @@
         } else if (!gameOver) {
             startAudioPlayback();
         }
+        regainGameFocus(evt);
     }
 
     /* Web Audio Synthesizer Beat */
