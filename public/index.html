@@ -222,15 +222,12 @@
             font-weight: bold;
         }
 
-        /* Hidden Background Spotify Player */
-        .hidden-spotify-container {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            overflow: hidden;
-            opacity: 0;
-            pointer-events: none;
-            left: -9999px;
+        .spotify-frame {
+            border-radius: 12px;
+            width: 100%;
+            height: 80px;
+            border: none;
+            display: block;
         }
 
         #musicButtons button.active-track {
@@ -311,6 +308,11 @@
         <p style="font-size: 1.1rem; margin: -4px 0 10px; color: var(--panel-ink);">Click any song below to vibe with your image:</p>
         <div id="musicButtons"></div>
 
+        <!-- Embedded Spotify Player for Lobby Audio Streaming -->
+        <div style="margin: 14px 0; border-radius: 12px; overflow: hidden; background: #121212;">
+            <iframe id="spotifyPlayer" class="spotify-frame" src="https://open.spotify.com/embed/track/0Vj2y1A13Vi48CoI3NeP8f?utm_source=generator&theme=0&autoplay=1" width="100%" height="80" frameborder="0" allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+        </div>
+
         <hr style="border-color: #6b58c9; margin: 18px 0;">
 
         <h3>🔍 Search Any Song on Spotify:</h3>
@@ -324,7 +326,7 @@
                 🎵 Selected Track
             </div>
             <p style="font-size: 0.95rem; margin: 0 0 12px; color: var(--panel-ink);">
-                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music plays live in background during your run!
+                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music streams live in background during run!
             </p>
 
             <!-- Host Controls -->
@@ -338,13 +340,6 @@
             </button>
         </div>
     </div>
-
-    <!-- BACKGROUND AUDIO PLAYER (HIDDEN FROM UI) -->
-    <div class="hidden-spotify-container">
-        <iframe id="spotifyPlayer" src="" width="1" height="1" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
-    </div>
-
-    <audio id="previewAudio" loop></audio>
 
     <!-- STEP 3: GAME CANVAS -->
     <canvas id="gameCanvas" width="400" height="550" tabindex="1"></canvas>
@@ -580,8 +575,6 @@
 
         playCrashSFX();
         stopSynthBeat();
-        const audio = document.getElementById('previewAudio');
-        if (audio) audio.pause();
         if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
 
         canvas.style.display = 'none';
