@@ -55,4 +55,4 @@ Desktop.ini
 dist/
 build/
 out/
-.next/
+.next/.env

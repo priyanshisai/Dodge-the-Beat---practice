@@ -171,7 +171,6 @@
             font-size: 0.9rem;
         }
     </style>
-    <!-- Socket.io Client -->
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -218,6 +217,7 @@
         <div id="spotifyEmbedContainer" style="margin-top: 15px; display: none;">
             <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allow="autoplay; encrypted-media"></iframe>
             <br>
+            <p style="font-size: 0.8rem; color: var(--panel-ink); margin: 6px 0;">💡 Press ▶ in player above, then click Start!</p>
             <button id="startBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline);">Start Game for Both!</button>
         </div>
     </div>
@@ -233,7 +233,7 @@
 </div>
 
 <script>
-    // Socket.io Setup
+    // Socket.io Room Setup
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('room');
@@ -255,16 +255,19 @@
     let opponentScore = 0;
     let opponentDead = false;
 
-    // Room Syncing
+    // Room Syncing Listeners
     socket.on('roomState', (room) => {
         const count = Object.keys(room.players).length;
         document.getElementById('roomPlayerCount').innerText = `Players in room: ${count} / 2`;
 
-        // Fetch Opponent Image if connected
         for (let pid in room.players) {
             if (pid !== socket.id && room.players[pid].image) {
                 opponentImg.src = room.players[pid].image;
             }
+        }
+
+        if (room.trackId) {
+            loadSpotifyPlayer(room.trackId);
         }
     });
 
@@ -273,7 +276,13 @@
         loadSpotifyPlayer(trackId);
     });
 
+    // Synchronized Start for BOTH Players
     socket.on('gameStart', ({ speed }) => {
+        document.getElementById('shareBanner').style.display = 'none';
+        document.getElementById('uploadPanel').style.display = 'none';
+        document.getElementById('musicPanel').style.display = 'none';
+
+        canvas.style.display = 'block';
         startGame(speed);
     });
 
@@ -289,7 +298,7 @@
         opponentDead = true;
     });
 
-    // Upload & Vision AI
+    // Photo Vision Upload
     document.getElementById('imageInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
@@ -302,7 +311,7 @@
 
     async function uploadAndAnalyze() {
         if (!base64Image) return alert("Please select an image first!");
-        document.getElementById('statusText').innerText = "Gemma 4 reading photo vibe...";
+        document.getElementById('statusText').innerText = "Reading photo vibe...";
 
         try {
             const res = await fetch('/api/analyze-character', {
@@ -319,7 +328,6 @@
 
             document.getElementById('charTitle').innerText = `Character: ${gameData.characterName}`;
 
-            // Join Room via WebSockets
             socket.emit('joinRoom', { roomId, playerImage: base64Image, characterName: gameData.characterName });
 
             const btnContainer = document.getElementById('musicButtons');
@@ -357,10 +365,13 @@
     }
 
     function requestStartGame() {
+        if (!base64Image) {
+            return alert("Please upload your photo before starting!");
+        }
         socket.emit('startGame', { roomId });
     }
 
-    // Game Canvas Loop
+    // Engine & Canvas Loop
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const numLanes = 4;
@@ -380,8 +391,6 @@
 
     function startGame(speed) {
         obstacleSpeed = speed;
-        document.getElementById('musicPanel').style.display = 'none';
-        canvas.style.display = 'block';
         score = 0;
         gameOver = false;
         fallingObjects = [];
@@ -394,7 +403,8 @@
     function spawnObstacle() {
         if (gameOver) return;
         const lane = Math.floor(Math.random() * numLanes);
-        const label = gameData.obstacles[Math.floor(Math.random() * gameData.obstacles.length)];
+        const obstacleList = gameData?.obstacles || ["Flying Pumpkin", "Hostel Bed", "Salty Tomato", "Hot Samosa"];
+        const label = obstacleList[Math.floor(Math.random() * obstacleList.length)];
         fallingObjects.push({ lane, y: -40, label });
     }
 
@@ -402,18 +412,15 @@
         if (gameOver) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw Lanes
         for (let i = 0; i < numLanes; i++) {
             ctx.fillStyle = i % 2 === 0 ? '#2b2060' : '#352879';
             ctx.fillRect(i * laneWidth, 0, laneWidth, canvas.height);
         }
 
-        // Player Avatar
         const playerX = currentLane * laneWidth + laneWidth / 2;
         const playerY = canvas.height - 70;
         ctx.drawImage(playerImg, playerX - 20, playerY - 20, 40, 40);
 
-        // Opponent Avatar (Ghosted)
         if (opponentImg.src) {
             const oppX = opponentLane * laneWidth + laneWidth / 2;
             ctx.globalAlpha = 0.5;
@@ -421,7 +428,6 @@
             ctx.globalAlpha = 1.0;
         }
 
-        // Falling Obstacles
         for (let i = 0; i < fallingObjects.length; i++) {
             let obj = fallingObjects[i];
             obj.y += obstacleSpeed;
@@ -430,7 +436,7 @@
 
             if (obj.lane === currentLane && obj.y > playerY - 35 && obj.y < playerY + 25) {
                 gameOver = true;
-                socket.emit('playerDied', { roomId, score, roast: gameData.roast });
+                socket.emit('playerDied', { roomId, score, roast: gameData?.roast || "Flattened!" });
                 document.getElementById('gameOverPanel').style.display = 'block';
                 document.getElementById('roastText').innerText = `You hit ${obj.label}! Opponent Score: ${opponentScore}`;
                 return;
@@ -442,7 +448,6 @@
         score++;
         socket.emit('updateScore', { roomId, score });
 
-        // HUD Scores
         ctx.fillStyle = '#ffd86b';
         ctx.font = '12px "Press Start 2P", monospace';
         ctx.fillText(`YOU: ${score}`, 15, 30);

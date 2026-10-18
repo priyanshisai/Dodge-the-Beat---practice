@@ -150,14 +150,13 @@ const activeRooms = {};
 io.on('connection', (socket) => {
     console.log(`🔌 Player Connected: ${socket.id}`);
 
-    // Join Room via Share Link / Room ID
+    // Join Room
     socket.on('joinRoom', ({ roomId, playerImage, characterName }) => {
         socket.join(roomId);
         if (!activeRooms[roomId]) {
-            activeRooms[roomId] = { players: {}, gameStarted: false, trackId: null, speed: 7 };
+            activeRooms[roomId] = { players: {}, gameStarted: false, trackId: "0Vj2y1A13Vi48CoI3NeP8f", speed: 7 };
         }
 
-        // Add Player to Room
         activeRooms[roomId].players[socket.id] = {
             id: socket.id,
             lane: 1,
@@ -168,7 +167,6 @@ io.on('connection', (socket) => {
             isDead: false
         };
 
-        // Broadcast room update to all players in this room
         io.to(roomId).emit('roomState', activeRooms[roomId]);
     });
 
@@ -181,7 +179,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Start game simultaneously
+    // Start game simultaneously for all players in room
     socket.on('startGame', ({ roomId }) => {
         if (activeRooms[roomId]) {
             activeRooms[roomId].gameStarted = true;
