@@ -203,11 +203,33 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Player Game Over
-    socket.on('playerDied', ({ roomId, score, roast }) => {
-        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
-            activeRooms[roomId].players[socket.id].isDead = true;
-            io.to(roomId).emit('opponentDied', { id: socket.id, score, roast });
+    // CRITICAL FIX: Match Ends for BOTH players as soon as ONE player loses
+    socket.on('playerDied', ({ roomId, score, obstacleHit, roast }) => {
+        const room = activeRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isDead = true;
+            room.players[socket.id].score = score;
+
+            const playerIds = Object.keys(room.players);
+            const loserId = socket.id;
+            const winnerId = playerIds.find(id => id !== loserId);
+
+            const loserName = room.players[loserId]?.name || 'Player';
+            const winnerName = winnerId ? room.players[winnerId]?.name : 'Opponent';
+
+            // Broadcast Match Over to BOTH players
+            io.to(roomId).emit('matchEnded', {
+                loserId,
+                winnerId,
+                loserName,
+                winnerName,
+                obstacleHit,
+                roast: roast || "Got completely flattened!",
+                scores: {
+                    [loserId]: room.players[loserId]?.score || score,
+                    [winnerId]: room.players[winnerId]?.score || 0
+                }
+            });
         }
     });
 

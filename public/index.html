@@ -170,6 +170,20 @@
             margin: 10px 0;
             font-size: 0.9rem;
         }
+
+        .score-board {
+            background: #2a1d5c;
+            color: #f1eaff;
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 12px;
+            text-align: left;
+        }
+        .winner-tag {
+            color: var(--gold);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -225,9 +239,12 @@
     <!-- STEP 3: GAME CANVAS -->
     <canvas id="gameCanvas" width="400" height="550"></canvas>
 
+    <!-- STEP 4: SYNCHRONIZED GAME OVER PANEL -->
     <div id="gameOverPanel" class="card" style="display:none;">
-        <h2>GAME OVER</h2>
+        <h2 id="winnerBanner">MATCH OVER</h2>
         <p id="roastText"></p>
+        <div id="finalScoreBoard" class="score-board"></div>
+        <br>
         <button onclick="resetGame()">Play Again</button>
     </div>
 </div>
@@ -253,7 +270,6 @@
     let selectedBpm = 7;
     let opponentLane = 2;
     let opponentScore = 0;
-    let opponentDead = false;
 
     // Room Syncing Listeners
     socket.on('roomState', (room) => {
@@ -294,8 +310,34 @@
         opponentScore = score;
     });
 
-    socket.on('opponentDied', ({ score, roast }) => {
-        opponentDead = true;
+    // SYNCHRONIZED MATCH END FOR BOTH PLAYERS
+    socket.on('matchEnded', ({ loserId, winnerId, loserName, winnerName, obstacleHit, roast, scores }) => {
+        gameOver = true;
+        if (gameInterval) clearInterval(gameInterval);
+
+        canvas.style.display = 'none';
+        document.getElementById('gameOverPanel').style.display = 'block';
+
+        const isMeWinner = socket.id === winnerId;
+        const myScore = scores[socket.id] || score;
+        const oppScore = scores[loserId === socket.id ? winnerId : loserId] || opponentScore;
+
+        if (isMeWinner) {
+            document.getElementById('winnerBanner').innerText = "🏆 YOU WIN!";
+            document.getElementById('winnerBanner').style.color = "var(--mint)";
+            document.getElementById('roastText').innerText = `Opponent (${loserName}) crashed into ${obstacleHit}! "${roast}"`;
+        } else {
+            document.getElementById('winnerBanner').innerText = "💀 YOU LOST!";
+            document.getElementById('winnerBanner').style.color = "var(--pink)";
+            document.getElementById('roastText').innerText = `You crashed into ${obstacleHit}! "${roast}"`;
+        }
+
+        document.getElementById('finalScoreBoard').innerHTML = `
+            <div class="winner-tag">Winner: ${isMeWinner ? 'YOU' : winnerName}</div>
+            <hr style="border-color:#4a3890; margin: 8px 0;">
+            <p><b>Your Score:</b> ${myScore}</p>
+            <p><b>Opponent Score:</b> ${oppScore}</p>
+        `;
     });
 
     // Photo Vision Upload
@@ -434,11 +476,16 @@
             ctx.fillStyle = '#ff5fa8';
             ctx.fillRect(obj.lane * laneWidth + 6, obj.y - 15, laneWidth - 12, 30);
 
+            // Collision Detection
             if (obj.lane === currentLane && obj.y > playerY - 35 && obj.y < playerY + 25) {
                 gameOver = true;
-                socket.emit('playerDied', { roomId, score, roast: gameData?.roast || "Flattened!" });
-                document.getElementById('gameOverPanel').style.display = 'block';
-                document.getElementById('roastText').innerText = `You hit ${obj.label}! Opponent Score: ${opponentScore}`;
+                // Emit collision event to server
+                socket.emit('playerDied', {
+                    roomId,
+                    score,
+                    obstacleHit: obj.label,
+                    roast: gameData?.roast || "Flattened!"
+                });
                 return;
             }
         }
