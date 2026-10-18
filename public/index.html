@@ -39,8 +39,20 @@
         #scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
         .sp { position: absolute; line-height: 0; }
         .sp svg { display: block; }
-        .moon { top: 5%; right: 8%; }
-
+        .moon  { top: 5%; right: 8%; }
+        .cloud { left: -260px; animation: drift linear infinite; }
+        .cloud svg { width: var(--cw, 120px); height: auto; }
+        .cloud-a { top: 16%; --cw: 130px; animation-duration: 90s; }
+        .cloud-b { top: 52%; --cw: 110px; animation-duration: 120s; animation-delay: -50s; opacity: .9; }
+        .cloud-c { top: 7%;  --cw: 84px;  animation-duration: 70s;  animation-delay: -22s; opacity: .85; }
+        .cloud-d { top: 36%; --cw: 150px; animation-duration: 110s; animation-delay: -70s; }
+        .cloud-e { top: 66%; --cw: 96px;  animation-duration: 100s; animation-delay: -35s; opacity: .8; }
+        .cloud-f { top: 26%; --cw: 72px;  animation-duration: 60s;  animation-delay: -10s; opacity: .75; }
+        .tree  { bottom: 64px; left: 3%; }
+        .bush  { bottom: 64px; right: 4%; }
+        .star  { animation: twinkle 3s steps(2) infinite; }
+        @keyframes drift { to { transform: translateX(calc(100vw + 300px)); } }
+        @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
         #ground {
             position: fixed; left: 0; right: 0; bottom: 0; height: 64px; z-index: 1;
             border-top: 6px solid #c3cbef;
@@ -48,6 +60,7 @@
             image-rendering: pixelated;
             pointer-events: none;
         }
+        @media (max-width: 700px) { .tree, .bush { display: none; } }
 
         .hero {
             position: relative;
@@ -64,9 +77,11 @@
             line-height: 1.6;
             margin: 0 0 22px;
             color: var(--panel-ink);
+            letter-spacing: 1px;
         }
         .pill {
             display: inline-block;
+            position: relative;
             background: var(--pink);
             color: #fff;
             font-family: 'Press Start 2P', monospace;
@@ -76,6 +91,8 @@
             border-radius: 12px;
             box-shadow: inset 0 3px 0 #ff9fd0, inset 0 -4px 0 var(--pink-dark);
         }
+        .pill .cursor { position: absolute; right: -22px; bottom: -34px; line-height: 0; }
+        .hero .folder { position: absolute; right: -10px; bottom: -22px; line-height: 0; transform: rotate(4deg); }
 
         .card {
             background: var(--panel);
@@ -99,6 +116,17 @@
             font-family: 'VT323', monospace;
             font-size: 1.2rem;
             color: var(--panel-ink);
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            background: var(--panel-ink);
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            margin-right: 12px;
+            border-radius: 8px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: .55rem;
             cursor: pointer;
         }
 
@@ -128,10 +156,20 @@
             transition: transform .08s;
         }
         button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:active { transform: translateY(3px); box-shadow: inset 0 3px 0 #ff9fd0; }
         button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); }
 
         #musicButtons button { display: block; width: 100%; margin: 12px 0; text-align: left; color: var(--outline); }
+        #musicButtons button:nth-child(3n+1) { background: var(--orange); box-shadow: inset 0 3px 0 #ffcf9a, inset 0 -5px 0 #c26a14; border-color: var(--outline); }
+        #musicButtons button:nth-child(3n+2) { background: var(--mint);   box-shadow: inset 0 3px 0 #b6f5c5, inset 0 -5px 0 #2a9c4a; border-color: var(--outline); }
+        #musicButtons button:nth-child(3n)   { background: var(--gold);   box-shadow: inset 0 3px 0 #fff0b8, inset 0 -5px 0 #c9a02c; border-color: var(--outline); }
+
         #statusText { margin: 14px 0 0; min-height: 1.4em; }
+
+        #gameOverPanel { background: #3b1d6e; color: #f1eaff; }
+        #gameOverPanel h2 { font-size: 1.3rem; color: var(--pink); text-shadow: 3px 3px 0 var(--outline); animation: shake .5s; }
+        @keyframes shake { 0%,100% { translate: 0; } 20% { translate: -8px 0; } 40% { translate: 8px 0; } 60% { translate: -6px 0; } 80% { translate: 6px 0; } }
+        #roastText { background: var(--panel); color: var(--panel-ink); border-radius: 12px; padding: 14px; }
 
         #gameCanvas {
             display: none;
@@ -145,7 +183,20 @@
             height: auto;
             aspect-ratio: 400 / 550;
             touch-action: none;
+            user-select: none;
         }
+        #controlsHint { display: none; margin: 0 0 28px; }
+        .key {
+            display: inline-block; min-width: 34px; padding: 6px 8px; margin: 0 3px;
+            background: var(--panel); color: var(--panel-ink);
+            border-bottom: 5px solid #8d7cd6; border-radius: 6px;
+            font-family: 'Press Start 2P', monospace; font-size: .6rem;
+        }
+        .footer-note { font-size: 1.1rem; background: rgba(26, 18, 64, .75); padding: 4px 14px; border-radius: 999px; }
+
+        .tagline { margin: -8px 0 26px; font-size: 1.55rem; line-height: 1.2; color: #ffe9b0; text-shadow: 2px 2px 0 var(--outline); }
+        .tagline b { color: var(--pink); font-weight: normal; }
+        .inl { display: inline-block; vertical-align: middle; line-height: 0; margin: 0 6px; }
 
         .share-box {
             background: #2a1d5c;
@@ -170,21 +221,146 @@
             font-size: 1.2rem;
             font-weight: bold;
         }
+
+        .spotify-frame {
+            border-radius: 12px;
+            width: 100%;
+            height: 80px;
+            border: none;
+            display: block;
+        }
+
+        .music-hud {
+            background: var(--panel);
+            color: var(--panel-ink);
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin: 0 auto 14px;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, .25);
+            width: min(100%, max(240px, min(400px, calc((100vh - 150px) * .727))));
+            box-sizing: border-box;
+            border: 3px solid var(--outline);
+            animation: fadeInHUD 0.3s ease-out;
+        }
+        @keyframes fadeInHUD {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .music-hud-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .music-hud-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--panel-ink);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
+            flex: 1;
+        }
+        .hud-vibe-pill {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.52rem;
+            background: var(--pink);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+        .spotify-slot {
+            margin: 4px 0 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #121212;
+            min-height: 80px;
+        }
+        .music-hud-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .hud-btn {
+            background: var(--panel-ink);
+            color: #ffd86b;
+            border: 2px solid var(--outline);
+            padding: 6px 10px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 2px;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -3px 0 rgba(0,0,0,0.4);
+            transition: transform 0.08s, filter 0.08s;
+        }
+        .hud-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        .hud-btn:active { transform: translateY(2px); }
+        .hud-btn-accent {
+            background: var(--mint);
+            color: var(--outline);
+            animation: pulse-border 1.6s infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(91, 227, 125, 0.7); }
+            50% { box-shadow: 0 0 0 5px rgba(91, 227, 125, 0); }
+        }
+
+        #musicButtons button.active-track {
+            outline: 3px solid #ffffff;
+            box-shadow: 0 0 12px #ff5fa8, inset 0 3px 0 #ffffff;
+            transform: scale(1.02);
+            position: relative;
+        }
+        #musicButtons button.active-track::after {
+            content: "✓ ACTIVE";
+            float: right;
+            font-size: 0.55rem;
+            background: var(--panel-ink);
+            color: #5be37d;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
     </style>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
 <body>
 
+<!-- Pixel scene -->
 <div id="scene">
-    <div class="sp moon" data-sprite="moon" data-px="6"></div>
+    <div class="sp moon"    data-sprite="moon"  data-px="6"></div>
+    <div class="sp cloud cloud-a" data-sprite="cloud" data-px="6"></div>
+    <div class="sp cloud cloud-b" data-sprite="cloud" data-px="5"></div>
+    <div class="sp cloud cloud-c" data-sprite="cloud" data-px="4"></div>
+    <div class="sp cloud cloud-d" data-sprite="cloud" data-px="6"></div>
+    <div class="sp cloud cloud-e" data-sprite="cloud" data-px="5"></div>
+    <div class="sp cloud cloud-f" data-sprite="cloud" data-px="4"></div>
+    <div class="sp tree"    data-sprite="tree"  data-px="6"></div>
+    <div class="sp bush"    data-sprite="bush"  data-px="5"></div>
 </div>
 <div id="ground"></div>
 
 <div class="container">
     <div class="hero">
         <h1>DODGE-THE-BEAT</h1>
-        <div class="pill">2-PLAYER MULTIPLAYER RUNNER</div>
+        <div class="pill">2-PLAYER MULTIPLAYER RUNNER
+            <span class="cursor" data-sprite="cursor" data-px="4"></span>
+        </div>
+        <span class="folder" data-sprite="folder" data-px="5"></span>
     </div>
+
+    <p class="tagline"><span class="inl" data-sprite="note" data-px="3"></span>Drop a pic. Catch its song. <b>Dodge the beat!</b><span class="inl" data-sprite="note" data-px="3"></span></p>
 
     <!-- SHARE LINK BANNER -->
     <div id="shareBanner" class="card">
@@ -203,49 +379,164 @@
         <p id="statusText"></p>
     </div>
 
-    <!-- STEP 2: MUSIC SELECT -->
+    <!-- STEP 2: MUSIC SELECT & SPOTIFY SEARCH -->
     <div id="musicPanel" class="card">
         <h2 id="charTitle"></h2>
-        <h3>🎵 Recommended Tracks:</h3>
+
+        <div id="obstaclePreviewCard" style="margin: 14px 0 16px; background: rgba(42, 29, 92, 0.08); border: 2px dashed #6b58c9; border-radius: 14px; padding: 12px; display: none;">
+            <div style="font-family: 'Press Start 2P', monospace; font-size: 0.62rem; color: var(--panel-ink); margin-bottom: 10px;">
+                ⚡ OBSTACLE STICKERS TO DODGE:
+            </div>
+            <div id="obstaclePreviewList" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;"></div>
+        </div>
+
+        <h3>🎵 Image Vibe Track Recommendations:</h3>
+        <p style="font-size: 1.1rem; margin: -4px 0 10px; color: var(--panel-ink);">Click any song below to vibe with your image:</p>
         <div id="musicButtons"></div>
 
-        <hr style="border-color: #6b58c9; margin: 20px 0;">
+        <hr style="border-color: #6b58c9; margin: 18px 0;">
 
-        <h3>🔍 Search Spotify:</h3>
-        <input type="text" id="spotifyQuery" placeholder="Song title..." />
-        <button onclick="searchSpotifyTrack()">Search</button>
+        <h3>🔍 Search Any Song on Spotify:</h3>
+        <div style="display: flex; gap: 8px; justify-content: center; align-items: center; max-width: 440px; margin: 0 auto;">
+            <input type="text" id="spotifyQuery" placeholder="Type artist or song title..." />
+            <button onclick="searchSpotifyTrack()" style="margin: 0; padding: 10px 14px;">Search</button>
+        </div>
 
-        <div id="spotifyEmbedContainer" style="margin-top: 15px; display: none;">
-            <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allow="autoplay; encrypted-media"></iframe>
-            <br>
-            <p style="font-size: 0.8rem; color: var(--panel-ink); margin: 6px 0;">💡 Press ▶ in player above!</p>
+        <div id="selectedTrackCard" style="margin-top: 18px; display: none; background: rgba(42, 29, 92, 0.08); border: 2px dashed #6b58c9; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 1.15rem; font-weight: bold; color: var(--panel-ink); margin-bottom: 6px;" id="selectedTrackName">
+                🎵 Selected Track
+            </div>
+            <p style="font-size: 0.95rem; margin: 0 0 12px; color: var(--panel-ink);">
+                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music plays live during your run!
+            </p>
 
-            <!-- Host Button -->
-            <button id="hostStartBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline); display: none;" disabled>
+            <!-- Host Controls -->
+            <button id="hostStartBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;" disabled>
                 Waiting for Opponent to Ready Up...
             </button>
 
-            <!-- Guest Button -->
-            <button id="guestReadyBtn" onclick="sendReadySignal()" style="background: var(--gold); color: var(--outline); display: none;">
+            <!-- Guest Controls -->
+            <button id="guestReadyBtn" onclick="sendReadySignal()" style="background: var(--gold); color: var(--outline); font-size: 0.75rem; width: 100%; padding: 14px; margin: 0; display: none;">
                 I'm Ready!
             </button>
         </div>
     </div>
 
+    <!-- STEP 3: ACTIVE GAME MUSIC HUD -->
+    <div id="gameMusicHUD" class="music-hud" style="display: none;">
+        <div class="music-hud-header">
+            <div class="music-hud-title">
+                <span class="music-pulse-icon">🎵</span>
+                <span id="hudTrackTitle">Loading Track...</span>
+            </div>
+            <span id="hudVibeBadge" class="hud-vibe-pill">VIBE</span>
+        </div>
+
+        <div id="spotifyEmbedSlot" class="spotify-slot">
+            <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+        </div>
+
+        <div class="music-hud-controls">
+            <button type="button" id="btnSoundMode" onclick="cycleSoundMode()" class="hud-btn">
+                🔊 Sound: <span id="soundModeLabel">Spotify + Beat</span>
+            </button>
+            <button type="button" id="btnMuteAudio" onclick="toggleMuteAudio()" class="hud-btn">
+                🔊 Mute
+            </button>
+            <button type="button" id="btnKickstart" onclick="kickstartSpotifyAudio()" class="hud-btn hud-btn-accent">
+                ▶ Click If Paused
+            </button>
+        </div>
+    </div>
+
+    <audio id="previewAudio" loop></audio>
+
     <!-- STEP 3: GAME CANVAS -->
     <canvas id="gameCanvas" width="400" height="550"></canvas>
+    <p id="controlsHint">Move: <span class="key">A</span><span class="key">D</span> or <span class="key">&larr;</span><span class="key">&rarr;</span></p>
 
     <!-- STEP 4: SYNCHRONIZED GAME OVER PANEL -->
     <div id="gameOverPanel" class="card" style="display:none;">
         <h2 id="winnerBanner">MATCH OVER</h2>
+        <div id="hitStickerSlot" style="margin: 10px 0;"></div>
         <p id="roastText"></p>
         <div id="finalScoreBoard" class="score-board"></div>
         <br>
         <button onclick="resetGame()">Play Again</button>
     </div>
+
+    <span class="footer-note">Made for Hacktoberfest</span>
 </div>
 
 <script>
+    /* Sprite SVGs */
+    const SPRITES = {
+        moon: { px: 6, pal: { y: '#ffd86b' }, map: [
+                '....yyyy....', '..yyyyyy....', '.yyyyy......', '.yyyy.......',
+                'yyyyy.......', 'yyyyy.......', 'yyyyy.......', 'yyyyy.......',
+                '.yyyy.......', '.yyyyy.yyy..', '..yyyyyyyy..', '....yyyy....' ] },
+        star: { px: 3, pal: { y: '#ffd86b' }, map: [
+                '...y...', '...y...', '..yyy..', 'yyyyyyy', '..yyy..', '...y...', '...y...' ] },
+        cloud: { px: 6, pal: { p: '#ff8fb8', o: '#ffb36b', l: '#9a86e6' }, map: [
+                '......oooo..........', '....oooooooo........', '..ppppppppppoo......',
+                '.pppppppppppppppp...', 'pppppppppppppppppppp', 'lllllllllllllllllll.', '.llllllllllllllllll.' ] },
+        tree: { px: 6, pal: { g: '#4fc24a', G: '#2f8f3a', b: '#6b4a2b' }, map: [
+                '....gggggggg......', '..ggggggggggggg...', '.gggGggggggGggggg.',
+                'gggggggGgggggggggg', 'ggGggggggggGgggggg', '.gggggggggggggggg.',
+                '..gggGgggggGggg...', '....gggggggggg....', '........bb........',
+                '........bb........', '.......bbbb.......', '......bbbbbb......' ] },
+        bush: { px: 5, pal: { g: '#3aa75a', G: '#2a7a44' }, map: [
+                '...gggg.....', '.gggGgggg...', 'ggggggGggggg', 'gGggggggGggg', 'gggggggggggg' ] },
+        folder: { px: 5, pal: { d: '#3a2410', y: '#ffc93c', o: '#f59e0b' }, map: [
+                'dddddd' + '.'.repeat(10),
+                'dyyyyyd' + '.'.repeat(9),
+                'dyyyyyd' + 'd'.repeat(8) + '.',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'y'.repeat(14) + 'd',
+                'd' + 'o'.repeat(14) + 'd',
+                'd'.repeat(16) ] },
+        cursor: { px: 4, pal: { d: '#1a1240', w: '#ffffff' }, map: [
+                'd...........', 'dd..........', 'dwd.........', 'dwwd........', 'dwwwd.......',
+                'dwwwwd......', 'dwwwwwd.....', 'dwwwwwwd....', 'dwwwwwwwd...', 'dwwwwwdddd..',
+                'dwwdwwd.....', 'dwd.dwwd....', 'dd..dwwd....', 'd....dwwd...', '.....dwwd...', '......dd....' ] },
+        note: { px: 4, pal: { n: '#ffd86b' }, map: [
+                '...nnnn.', '...n..n.', '...n..n.', '...n....', '...n....', '.nnn....', 'nnnn....', '.nn.....' ] },
+        stone: { px: 4, pal: { d: '#4a4f7a', S: '#aab3d9', s: '#7f89b8' }, map: [
+                'dddddddddddddddd', 'SSSSSsssdSSSSsss', 'SssssssdSssssssd', 'dddddddddddddddd',
+                'ssdSSSSSsssdSSSS', 'ssdSsssssssdSsss', 'ssdsssssssdsssss', 'dddddddddddddddd' ] }
+    };
+
+    function spriteSVG(name, px) {
+        const s = SPRITES[name];
+        const size = px || s.px;
+        const h = s.map.length;
+        const w = Math.max(...s.map.map(r => r.length));
+        let rects = '';
+        s.map.forEach((row, y) => {
+            let x = 0;
+            while (x < w) {
+                const c = row[x] || '.';
+                if (c === '.') { x++; continue; }
+                let n = 1;
+                while (x + n < w && (row[x + n] || '.') === c) n++;
+                rects += `<rect x="${x}" y="${y}" width="${n}" height="1" fill="${s.pal[c]}"/>`;
+                x += n;
+            }
+        });
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w * size}" height="${h * size}" shape-rendering="crispEdges">${rects}</svg>`;
+    }
+
+    document.querySelectorAll('[data-sprite]').forEach(el => {
+        el.innerHTML = spriteSVG(el.dataset.sprite, parseInt(el.dataset.px, 10));
+    });
+
+    const stoneBg = 'url("data:image/svg+xml,' + encodeURIComponent(spriteSVG('stone', 4)) + '")';
+    document.getElementById('ground').style.backgroundImage = stoneBg;
+
+    // Socket.io Room Setup
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('room');
@@ -266,6 +557,37 @@
     let opponentLane = 2;
     let opponentScore = 0;
     let isHostPlayer = false;
+    let currentSelectedTrack = null;
+
+    /* Spotify Controller & Audio Context */
+    let spotifyEmbedController = null;
+    let audioCtx = null;
+    let soundMode = 'both';
+    let isMuted = false;
+    let beatInterval = null;
+    let beatStep = 0;
+
+    function getAudioContext() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+        const element = document.getElementById('spotifyPlayer');
+        if (!element) return;
+        try {
+            IFrameAPI.createController(element, { uri: 'spotify:track:0Vj2y1A13Vi48CoI3NeP8f' }, (EmbedController) => {
+                spotifyEmbedController = EmbedController;
+                spotifyEmbedController.addListener('playback_update', e => {
+                    if (!e.data.isPaused && soundMode === 'both') stopSynthBeat();
+                });
+            });
+        } catch(err) { console.warn("Spotify IFrame API init error:", err); }
+    };
 
     // Room Syncing Listeners
     socket.on('roomState', (room) => {
@@ -276,7 +598,6 @@
         const myData = room.players[socket.id];
         if (myData) isHostPlayer = myData.isHost;
 
-        // Determine Opponent Status
         let opponent = null;
         for (let pid in room.players) {
             if (pid !== socket.id) {
@@ -285,7 +606,6 @@
             }
         }
 
-        // Toggle Host vs Guest Controls
         const hostBtn = document.getElementById('hostStartBtn');
         const guestBtn = document.getElementById('guestReadyBtn');
         const statusText = document.getElementById('guestStatusText');
@@ -303,7 +623,7 @@
                 hostBtn.disabled = true;
                 statusText.innerText = "Opponent joined! Waiting for them to click Ready...";
             } else {
-                hostBtn.innerText = "Start Game for Both!";
+                hostBtn.innerText = "🚀 START GAME FOR BOTH!";
                 hostBtn.disabled = false;
                 statusText.innerText = "Opponent is Ready! Click Start!";
             }
@@ -312,19 +632,17 @@
             guestBtn.style.display = 'inline-block';
 
             if (myData && myData.isReady) {
-                guestBtn.innerText = "You are Ready! (Waiting for Host to Start)";
+                guestBtn.innerText = "You are Ready! (Waiting for Host)";
                 guestBtn.disabled = true;
                 statusText.innerText = "Waiting for Host to start the match...";
             } else {
                 guestBtn.innerText = "I'm Ready!";
                 guestBtn.disabled = false;
-                statusText.innerText = "Click 'I'm Ready!' when you are prepared.";
+                statusText.innerText = "Click 'I'm Ready!' when prepared.";
             }
         }
 
-        if (room.trackId) {
-            loadSpotifyPlayer(room.trackId);
-        }
+        if (room.trackId) loadSpotifyPlayer(room.trackId);
     });
 
     socket.on('trackSelected', ({ trackId, speed }) => {
@@ -332,30 +650,34 @@
         loadSpotifyPlayer(trackId);
     });
 
-    // Synchronized Start for BOTH Players
     socket.on('gameStart', ({ speed }) => {
+        startAudioPlayback();
         document.getElementById('shareBanner').style.display = 'none';
         document.getElementById('uploadPanel').style.display = 'none';
         document.getElementById('musicPanel').style.display = 'none';
 
+        document.getElementById('gameMusicHUD').style.display = 'block';
         canvas.style.display = 'block';
+        document.getElementById('controlsHint').style.display = 'block';
         startGame(speed);
     });
 
-    socket.on('opponentMoved', ({ lane }) => {
-        opponentLane = lane;
-    });
+    socket.on('opponentMoved', ({ lane }) => { opponentLane = lane; });
+    socket.on('opponentScore', ({ score }) => { opponentScore = score; });
 
-    socket.on('opponentScore', ({ score }) => {
-        opponentScore = score;
-    });
-
-    // Synchronized Match End when ANY player loses
     socket.on('matchEnded', ({ loserId, winnerId, loserName, winnerName, obstacleHit, roast, scores }) => {
         gameOver = true;
         if (gameInterval) clearInterval(gameInterval);
 
+        playCrashSFX();
+        stopSynthBeat();
+        const audio = document.getElementById('previewAudio');
+        if (audio) audio.pause();
+        if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
+
         canvas.style.display = 'none';
+        document.getElementById('controlsHint').style.display = 'none';
+        document.getElementById('gameMusicHUD').style.display = 'none';
         document.getElementById('gameOverPanel').style.display = 'block';
 
         const isMeWinner = socket.id === winnerId;
@@ -380,7 +702,108 @@
         `;
     });
 
-    // Photo Vision Upload
+    /* Obstacle Sticker System */
+    const stickerCanvases = new Map();
+    const laneColors = ['#2b2060', '#352879', '#2b2060', '#352879'];
+    const blockColors = ['#ff5fa8', '#ff9f43', '#ffd86b', '#5be37d'];
+
+    function lightenColor(col, percent) {
+        if (!col || col[0] !== '#') return '#ffffff';
+        const num = parseInt(col.slice(1), 16);
+        let r = Math.min(255, (num >> 16) + Math.round(255 * (percent / 100)));
+        let g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(255 * (percent / 100)));
+        let b = Math.min(255, (num & 0x0000FF) + Math.round(255 * (percent / 100)));
+        return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+
+    function resolveClientEmoji(name, index = 0) {
+        if (!name || typeof name !== 'string') return "⚡";
+        const lower = name.toLowerCase();
+        if (lower.includes('pumpkin')) return "🎃";
+        if (lower.includes('bed')) return "🛏️";
+        if (lower.includes('tomato')) return "🍅";
+        if (lower.includes('samosa')) return "🥟";
+        const fallbacks = ["🎃", "🛏️", "🍅", "🥟", "🔥", "⚡", "🍕", "👻"];
+        return fallbacks[index % fallbacks.length];
+    }
+
+    function normalizeClientObstacles(obstacles) {
+        const defaultList = [
+            { name: "Flying Pumpkin", emoji: "🎃" },
+            { name: "Hostel Bed", emoji: "🛏️" },
+            { name: "Salty Tomato", emoji: "🍅" },
+            { name: "Hot Samosa", emoji: "🥟" }
+        ];
+        if (!Array.isArray(obstacles) || obstacles.length === 0) return defaultList;
+        return obstacles.map((item, idx) => {
+            if (typeof item === 'string') return { name: item, emoji: resolveClientEmoji(item, idx) };
+            if (item && typeof item === 'object') return { name: item.name || "Obstacle", emoji: item.emoji || resolveClientEmoji(item.name, idx) };
+            return { name: "Mystery Obstacle", emoji: "🎁" };
+        });
+    }
+
+    function createDieCutStickerCanvas(obstacle, laneIndex) {
+        const sCanvas = document.createElement('canvas');
+        sCanvas.width = 128; sCanvas.height = 128;
+        const sctx = sCanvas.getContext('2d');
+        const cx = 64, cy = 60, R = 46;
+        const laneColor = blockColors[laneIndex % blockColors.length] || '#ffd86b';
+
+        sctx.fillStyle = 'rgba(26, 18, 64, 0.4)';
+        sctx.beginPath(); sctx.arc(cx + 2, cy + 6, R + 1, 0, Math.PI * 2); sctx.fill();
+
+        sctx.fillStyle = '#1a1240';
+        sctx.beginPath(); sctx.arc(cx, cy, R + 4, 0, Math.PI * 2); sctx.fill();
+
+        sctx.fillStyle = '#ffffff';
+        sctx.beginPath(); sctx.arc(cx, cy, R, 0, Math.PI * 2); sctx.fill();
+
+        const grad = sctx.createRadialGradient(cx - 10, cy - 10, 4, cx, cy, R - 6);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, lightenColor(laneColor, 22));
+        grad.addColorStop(1, laneColor);
+        sctx.fillStyle = grad;
+        sctx.beginPath(); sctx.arc(cx, cy, R - 5, 0, Math.PI * 2); sctx.fill();
+
+        sctx.font = '50px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+        sctx.textAlign = 'center'; sctx.textBaseline = 'middle';
+        sctx.fillText(obstacle.emoji || '⚡', cx, cy + 3);
+
+        return sCanvas;
+    }
+
+    function buildAllObstacleStickers() {
+        stickerCanvases.clear();
+        if (!gameData || !gameData.obstacles) return;
+        gameData.obstacles.forEach((obs, obsIdx) => {
+            for (let lane = 0; lane < 4; lane++) {
+                stickerCanvases.set(`${obsIdx}_${lane}`, createDieCutStickerCanvas(obs, lane));
+            }
+        });
+    }
+
+    function getStickerCanvas(obsIndex, laneIndex) {
+        const key = `${obsIndex}_${laneIndex}`;
+        if (!stickerCanvases.has(key)) {
+            const obs = (gameData?.obstacles && gameData.obstacles[obsIndex]) || { name: 'Obstacle', emoji: '⚡' };
+            stickerCanvases.set(key, createDieCutStickerCanvas(obs, laneIndex));
+        }
+        return stickerCanvases.get(key);
+    }
+
+    function renderObstaclePreview() {
+        const listEl = document.getElementById('obstaclePreviewList');
+        const cardEl = document.getElementById('obstaclePreviewCard');
+        if (!listEl || !gameData?.obstacles) return;
+        if (cardEl) cardEl.style.display = 'block';
+        listEl.innerHTML = gameData.obstacles.map((obs) => `
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 2px solid var(--outline); border-radius: 12px; padding: 5px 10px; box-shadow: 0 3px 0 rgba(0,0,0,0.2);">
+                <span style="font-size: 1.4rem; line-height: 1;">${obs.emoji || '⚡'}</span>
+                <span style="font-size: 0.95rem; font-weight: bold; color: var(--panel-ink);">${obs.name}</span>
+            </div>
+        `).join('');
+    }
+
     document.getElementById('imageInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
@@ -393,7 +816,7 @@
 
     async function uploadAndAnalyze() {
         if (!base64Image) return alert("Please select an image first!");
-        document.getElementById('statusText').innerText = "Reading photo vibe...";
+        document.getElementById('statusText').innerText = "Analyzing image vibe...";
 
         try {
             const res = await fetch('/api/analyze-character', {
@@ -405,23 +828,26 @@
             if (!data.success) return alert("Error processing image.");
 
             gameData = data.gameData;
+            gameData.obstacles = normalizeClientObstacles(gameData.obstacles);
+            buildAllObstacleStickers();
+            renderObstaclePreview();
+
             document.getElementById('uploadPanel').style.display = 'none';
             document.getElementById('musicPanel').style.display = 'block';
 
-            document.getElementById('charTitle').innerText = `Character: ${gameData.characterName}`;
+            document.getElementById('charTitle').innerHTML = `Character: ${gameData.characterName} <br><span style="font-size:0.7em; background:var(--pink); color:#fff; padding:4px 10px; border-radius:8px; display:inline-block; margin-top:6px;">Vibe: ${gameData.vibeBadge}</span>`;
 
             socket.emit('joinRoom', { roomId, playerImage: base64Image, characterName: gameData.characterName });
 
             const btnContainer = document.getElementById('musicButtons');
             btnContainer.innerHTML = '';
-            gameData.musicOptions.forEach(opt => {
+            gameData.musicOptions.forEach((opt, idx) => {
                 const btn = document.createElement('button');
+                btn.className = 'track-select-btn';
                 btn.innerText = `🎵 ${opt.genre}: ${opt.description}`;
-                btn.onclick = () => {
-                    selectedBpm = opt.bpmSpeed;
-                    socket.emit('selectTrack', { roomId, trackId: opt.spotifyTrackId, speed: opt.bpmSpeed });
-                };
+                btn.onclick = () => selectSong(opt, btn);
                 btnContainer.appendChild(btn);
+                if (idx === 0) selectSong(opt, btn);
             });
         } catch (err) {
             alert("Error connecting.");
@@ -430,10 +856,34 @@
         }
     }
 
+    function selectSong(opt, btnElement) {
+        currentSelectedTrack = opt;
+        selectedBpm = opt.bpmSpeed || 7;
+
+        document.querySelectorAll('.track-select-btn').forEach(b => b.classList.remove('active-track'));
+        if (btnElement) btnElement.classList.add('active-track');
+
+        const card = document.getElementById('selectedTrackCard');
+        if (card) {
+            card.style.display = 'block';
+            document.getElementById('selectedTrackName').innerText = `🎵 ${opt.description || opt.genre}`;
+            document.getElementById('selectedTrackBpm').innerText = selectedBpm;
+        }
+
+        socket.emit('selectTrack', { roomId, trackId: opt.spotifyTrackId, speed: opt.bpmSpeed });
+    }
+
     function loadSpotifyPlayer(trackId) {
         const iframe = document.getElementById('spotifyPlayer');
-        iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
-        document.getElementById('spotifyEmbedContainer').style.display = 'block';
+        if (hudTitle = document.getElementById('hudTrackTitle')) {
+            hudTitle.innerText = currentSelectedTrack?.description || "Syncing Music...";
+        }
+        if (spotifyEmbedController) {
+            try { spotifyEmbedController.loadUri(`spotify:track:${trackId}`); }
+            catch(e) { if (iframe) iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`; }
+        } else if (iframe) {
+            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+        }
     }
 
     async function searchSpotifyTrack() {
@@ -442,7 +892,11 @@
         const res = await fetch(`/api/spotify/search?query=${encodeURIComponent(q)}`);
         const data = await res.json();
         if (data.success && data.spotifyTrackId) {
-            socket.emit('selectTrack', { roomId, trackId: data.spotifyTrackId, speed: 7 });
+            const customTrack = {
+                genre: "Search Match", bpmSpeed: selectedBpm || 8,
+                description: data.trackName || q, spotifyTrackId: data.spotifyTrackId
+            };
+            selectSong(customTrack, null);
         }
     }
 
@@ -453,6 +907,138 @@
     function requestStartGame() {
         if (!base64Image) return alert("Upload your photo first!");
         socket.emit('startGame', { roomId });
+    }
+
+    function startAudioPlayback() {
+        getAudioContext();
+        if (spotifyEmbedController) { try { spotifyEmbedController.play(); } catch(e){} }
+        if (!isMuted && (soundMode === 'both' || soundMode === 'synth')) {
+            startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
+        }
+    }
+
+    function kickstartSpotifyAudio() {
+        getAudioContext();
+        if (spotifyEmbedController) { try { spotifyEmbedController.play(); } catch(e){} }
+        if (!beatInterval && !isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
+    }
+
+    function cycleSoundMode() {
+        if (soundMode === 'both') {
+            soundMode = 'synth';
+            document.getElementById('soundModeLabel').innerText = '🕹️ 8-Bit Beat Only';
+            if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
+            if (!isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
+        } else if (soundMode === 'synth') {
+            soundMode = 'spotify';
+            document.getElementById('soundModeLabel').innerText = '🎵 Spotify Only';
+            stopSynthBeat();
+            kickstartSpotifyAudio();
+        } else {
+            soundMode = 'both';
+            document.getElementById('soundModeLabel').innerText = '🎵 Spotify + Beat';
+            if (!isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
+            kickstartSpotifyAudio();
+        }
+    }
+
+    function toggleMuteAudio() {
+        isMuted = !isMuted;
+        document.getElementById('btnMuteAudio').innerText = isMuted ? '🔇 Unmute' : '🔊 Mute';
+        if (isMuted) {
+            stopSynthBeat();
+            if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
+        } else if (!gameOver) {
+            startAudioPlayback();
+        }
+    }
+
+    /* Web Audio Synthesizer Beat */
+    function startSynthBeat(vibe, bpmSpeed) {
+        stopSynthBeat();
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        const targetBpm = Math.round(85 + (bpmSpeed || 7) * 4);
+        const stepDuration = (60 / targetBpm) / 2;
+        beatStep = 0;
+
+        const VIBE_PATTERNS = {
+            "PARTY":    [110, 110, 130.81, 146.83, 164.81, 146.83, 130.81, 164.81],
+            "WORKOUT":  [98, 98, 123.47, 98, 146.83, 146.83, 130.81, 123.47],
+            "FUN":      [130.81, 164.81, 196.00, 220.00, 196.00, 164.81, 146.83, 130.81]
+        };
+        const pattern = VIBE_PATTERNS[vibe] || VIBE_PATTERNS["FUN"];
+
+        function playStep() {
+            if (gameOver || isMuted) return;
+            const now = ctx.currentTime;
+            const step = beatStep % 8;
+            if (step === 0 || step === 4) playKick(now);
+            if (step === 2 || step === 6) playSnare(now);
+            if (pattern[step] > 0) playBassNote(now, pattern[step], stepDuration * 0.85);
+            beatStep++;
+        }
+
+        playStep();
+        beatInterval = setInterval(playStep, stepDuration * 1000);
+    }
+
+    function stopSynthBeat() {
+        if (beatInterval) { clearInterval(beatInterval); beatInterval = null; }
+    }
+
+    function playKick(time) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, time);
+        osc.frequency.exponentialRampToValueAtTime(36, time + 0.12);
+        gain.gain.setValueAtTime(0.65, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(time); osc.stop(time + 0.15);
+    }
+
+    function playSnare(time) {
+        if (!audioCtx) return;
+        const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.1), audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.3, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+        noise.connect(gain); gain.connect(audioCtx.destination);
+        noise.start(time);
+    }
+
+    function playBassNote(time, freq, dur) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, time);
+        gain.gain.setValueAtTime(0.18, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(time); osc.stop(time + dur);
+    }
+
+    function playCrashSFX() {
+        try {
+            const ctx = getAudioContext(); if (!ctx) return;
+            const now = ctx.currentTime;
+            const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.35), ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource(); noise.buffer = buffer;
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.45, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            noise.connect(gain); gain.connect(ctx.destination);
+            noise.start(now);
+        } catch(e){}
     }
 
     // Engine & Canvas Loop
@@ -485,11 +1071,15 @@
     }
 
     function spawnObstacle() {
-        if (gameOver) return;
+        if (gameOver || !gameData?.obstacles?.length) return;
         const lane = Math.floor(Math.random() * numLanes);
-        const obstacleList = gameData?.obstacles || ["Flying Pumpkin", "Hostel Bed", "Salty Tomato", "Hot Samosa"];
-        const label = obstacleList[Math.floor(Math.random() * obstacleList.length)];
-        fallingObjects.push({ lane, y: -40, label });
+        const obsIndex = Math.floor(Math.random() * gameData.obstacles.length);
+        fallingObjects.push({
+            lane, y: -40,
+            obstacleIndex: obsIndex,
+            obstacle: gameData.obstacles[obsIndex],
+            wobblePhase: Math.random() * Math.PI * 2
+        });
     }
 
     function gameLoop() {
@@ -497,34 +1087,53 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         for (let i = 0; i < numLanes; i++) {
-            ctx.fillStyle = i % 2 === 0 ? '#2b2060' : '#352879';
+            ctx.fillStyle = laneColors[i];
             ctx.fillRect(i * laneWidth, 0, laneWidth, canvas.height);
         }
 
         const playerX = currentLane * laneWidth + laneWidth / 2;
         const playerY = canvas.height - 70;
-        ctx.drawImage(playerImg, playerX - 20, playerY - 20, 40, 40);
 
+        // Draw Player
+        ctx.save();
+        ctx.beginPath(); ctx.arc(playerX, playerY, 25, 0, Math.PI * 2); ctx.clip();
+        if (playerImg.src) ctx.drawImage(playerImg, playerX - 25, playerY - 25, 50, 50);
+        ctx.restore();
+
+        // Draw Opponent Ghost
         if (opponentImg.src) {
             const oppX = opponentLane * laneWidth + laneWidth / 2;
             ctx.globalAlpha = 0.5;
-            ctx.drawImage(opponentImg, oppX - 20, playerY - 20, 40, 40);
+            ctx.save();
+            ctx.beginPath(); ctx.arc(oppX, playerY, 25, 0, Math.PI * 2); ctx.clip();
+            ctx.drawImage(opponentImg, oppX - 25, playerY - 25, 50, 50);
+            ctx.restore();
             ctx.globalAlpha = 1.0;
         }
 
+        // Draw Falling Stickers
         for (let i = 0; i < fallingObjects.length; i++) {
             let obj = fallingObjects[i];
             obj.y += obstacleSpeed;
-            ctx.fillStyle = '#ff5fa8';
-            ctx.fillRect(obj.lane * laneWidth + 6, obj.y - 15, laneWidth - 12, 30);
 
-            // Collision Detection
+            const cx = obj.lane * laneWidth + laneWidth / 2;
+            const cy = obj.y;
+            const sticker = getStickerCanvas(obj.obstacleIndex, obj.lane);
+
+            if (sticker) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.sin(cy * 0.05 + obj.wobblePhase) * 0.08);
+                ctx.drawImage(sticker, -28, -28, 56, 56);
+                ctx.restore();
+            }
+
             if (obj.lane === currentLane && obj.y > playerY - 35 && obj.y < playerY + 25) {
                 gameOver = true;
                 socket.emit('playerDied', {
                     roomId,
                     score,
-                    obstacleHit: obj.label,
+                    obstacleHit: obj.obstacle.name,
                     roast: gameData?.roast || "Flattened!"
                 });
                 return;
