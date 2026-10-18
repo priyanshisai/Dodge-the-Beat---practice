@@ -2,10 +2,18 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
+
 const spotifyRoutes = require('./routes/spotifyRoutes');
 const { getSpotifyAccessToken } = require('./controllers/spotifyController');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
@@ -15,7 +23,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Register Spotify API Routes
 app.use('/api/spotify', spotifyRoutes);
 
-// Vibe Mapping for Gemma 4
+// Vibe Mapping Categories
 const VIBE_CATEGORIES = {
     "SAD": { query: "sad acoustic heartbreak", bpmSpeed: 4, badge: "SAD 😭" },
     "PARTY": { query: "club edm party bangers", bpmSpeed: 11, badge: "PARTY 🎉" },
@@ -25,10 +33,9 @@ const VIBE_CATEGORIES = {
     "ROMANTIC": { query: "bollywood romantic hits", bpmSpeed: 6, badge: "ROMANTIC ❤️" }
 };
 
-// Helper: Query Spotify API directly for live genre tracks
+// Helper: Query Spotify API for live genre tracks
 async function fetchGenreTracksFromSpotify(vibeKey) {
     const category = VIBE_CATEGORIES[vibeKey] || VIBE_CATEGORIES["FUN"];
-
     try {
         const token = await getSpotifyAccessToken();
         if (token) {
@@ -39,7 +46,7 @@ async function fetchGenreTracksFromSpotify(vibeKey) {
             if (data.tracks?.items?.length >= 3) {
                 const shuffled = data.tracks.items.sort(() => 0.5 - Math.random()).slice(0, 3);
                 return shuffled.map(track => ({
-                    genre: `${vibeKey} - Spotify Match`,
+                    genre: `${vibeKey} Match`,
                     bpmSpeed: category.bpmSpeed,
                     description: `${track.name} by ${track.artists[0]?.name}`,
                     spotifyTrackId: track.id
@@ -47,10 +54,9 @@ async function fetchGenreTracksFromSpotify(vibeKey) {
             }
         }
     } catch (err) {
-        console.warn("Spotify catalog query failed, using default track IDs:", err.message);
+        console.warn("Spotify catalog query failed:", err.message);
     }
 
-    // Fallback track list
     return [
         { genre: `${vibeKey} - Track 1`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 1`, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" },
         { genre: `${vibeKey} - Track 2`, bpmSpeed: category.bpmSpeed, description: `Vibe Track 2`, spotifyTrackId: "4cOdK2wGLETKBW3PvgPWqT" },
@@ -105,7 +111,6 @@ app.post('/api/analyze-character', async (req, res) => {
         const parsedData = JSON.parse(cleanText);
         const assignedVibe = parsedData.vibeCategory ? parsedData.vibeCategory.toUpperCase() : "FUN";
 
-        // Dynamic Live Spotify Fetching based on photo vibe
         const dynamicSongs = await fetchGenreTracksFromSpotify(assignedVibe);
 
         res.json({
@@ -137,5 +142,91 @@ app.post('/api/analyze-character', async (req, res) => {
     }
 });
 
+// ==========================================
+// REAL-TIME MULTIPLAYER SOCKET.IO ENGINE
+// ==========================================
+const activeRooms = {};
+
+io.on('connection', (socket) => {
+    console.log(`🔌 Player Connected: ${socket.id}`);
+
+    // Join Room via Share Link / Room ID
+    socket.on('joinRoom', ({ roomId, playerImage, characterName }) => {
+        socket.join(roomId);
+        if (!activeRooms[roomId]) {
+            activeRooms[roomId] = { players: {}, gameStarted: false, trackId: null, speed: 7 };
+        }
+
+        // Add Player to Room
+        activeRooms[roomId].players[socket.id] = {
+            id: socket.id,
+            lane: 1,
+            score: 0,
+            image: playerImage,
+            name: characterName || 'Player',
+            isHost: Object.keys(activeRooms[roomId].players).length === 0,
+            isDead: false
+        };
+
+        // Broadcast room update to all players in this room
+        io.to(roomId).emit('roomState', activeRooms[roomId]);
+    });
+
+    // Host selects song & syncs to opponent
+    socket.on('selectTrack', ({ roomId, trackId, speed }) => {
+        if (activeRooms[roomId]) {
+            activeRooms[roomId].trackId = trackId;
+            activeRooms[roomId].speed = speed;
+            io.to(roomId).emit('trackSelected', { trackId, speed });
+        }
+    });
+
+    // Start game simultaneously
+    socket.on('startGame', ({ roomId }) => {
+        if (activeRooms[roomId]) {
+            activeRooms[roomId].gameStarted = true;
+            io.to(roomId).emit('gameStart', { speed: activeRooms[roomId].speed });
+        }
+    });
+
+    // Sync player lane movement live
+    socket.on('moveLane', ({ roomId, lane }) => {
+        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
+            activeRooms[roomId].players[socket.id].lane = lane;
+            socket.to(roomId).emit('opponentMoved', { id: socket.id, lane });
+        }
+    });
+
+    // Sync score live
+    socket.on('updateScore', ({ roomId, score }) => {
+        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
+            activeRooms[roomId].players[socket.id].score = score;
+            socket.to(roomId).emit('opponentScore', { id: socket.id, score });
+        }
+    });
+
+    // Player Game Over
+    socket.on('playerDied', ({ roomId, score, roast }) => {
+        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
+            activeRooms[roomId].players[socket.id].isDead = true;
+            io.to(roomId).emit('opponentDied', { id: socket.id, score, roast });
+        }
+    });
+
+    // Handle Disconnect
+    socket.on('disconnect', () => {
+        for (const roomId in activeRooms) {
+            if (activeRooms[roomId].players[socket.id]) {
+                delete activeRooms[roomId].players[socket.id];
+                io.to(roomId).emit('roomState', activeRooms[roomId]);
+                if (Object.keys(activeRooms[roomId].players).length === 0) {
+                    delete activeRooms[roomId];
+                }
+            }
+        }
+        console.log(`❌ Player Disconnected: ${socket.id}`);
+    });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Multiplayer Server running on http://localhost:${PORT}`));

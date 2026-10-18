@@ -1,9 +1,7 @@
 // controllers/spotifyController.js
-
 let spotifyAccessToken = '';
 let tokenExpirationTime = 0;
 
-// Fetch Client Credentials Access Token from Spotify
 async function getSpotifyAccessToken() {
     const now = Date.now();
     if (spotifyAccessToken && now < tokenExpirationTime) {
@@ -32,7 +30,6 @@ async function getSpotifyAccessToken() {
     const data = await response.json();
     if (data.access_token) {
         spotifyAccessToken = data.access_token;
-        // Set expiration buffer (expires_in is usually 3600s)
         tokenExpirationTime = Date.now() + (data.expires_in - 60) * 1000;
         return spotifyAccessToken;
     }
@@ -40,22 +37,17 @@ async function getSpotifyAccessToken() {
     throw new Error("Failed to retrieve Spotify access token");
 }
 
-// Controller Method: Search Spotify Tracks
 exports.searchTrack = async (req, res) => {
     try {
         const { query } = req.query;
-        if (!query) {
-            return res.status(400).json({ success: false, error: 'Query parameter required.' });
-        }
+        if (!query) return res.status(400).json({ success: false, error: 'Query parameter required.' });
 
         const token = await getSpotifyAccessToken();
-
-        // Fallback if Spotify credentials aren't set up in .env yet
         if (!token) {
             return res.json({
                 success: true,
                 spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f",
-                warning: "Spotify API credentials missing in .env. Using fallback track."
+                warning: "Spotify credentials missing in .env. Using fallback."
             });
         }
 
@@ -75,7 +67,6 @@ exports.searchTrack = async (req, res) => {
             });
         }
 
-        // Default track if no result found
         res.json({ success: true, spotifyTrackId: "0Vj2y1A13Vi48CoI3NeP8f" });
 
     } catch (error) {
@@ -84,5 +75,4 @@ exports.searchTrack = async (req, res) => {
     }
 };
 
-// Export token getter so image vibe controller can use real Spotify tracks
 exports.getSpotifyAccessToken = getSpotifyAccessToken;
