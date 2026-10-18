@@ -222,98 +222,15 @@
             font-weight: bold;
         }
 
-        .spotify-frame {
-            border-radius: 12px;
-            width: 100%;
-            height: 80px;
-            border: none;
-            display: block;
-        }
-
-        .music-hud {
-            background: var(--panel);
-            color: var(--panel-ink);
-            border-radius: 16px;
-            padding: 12px 14px;
-            margin: 0 auto 14px;
-            box-shadow: 0 6px 0 rgba(0, 0, 0, .25);
-            width: min(100%, max(240px, min(400px, calc((100vh - 150px) * .727))));
-            box-sizing: border-box;
-            border: 3px solid var(--outline);
-            animation: fadeInHUD 0.3s ease-out;
-        }
-        @keyframes fadeInHUD {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .music-hud-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .music-hud-title {
-            font-size: 0.95rem;
-            font-weight: bold;
-            color: var(--panel-ink);
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        /* Hidden Background Spotify Player */
+        .hidden-spotify-container {
+            position: absolute;
+            width: 1px;
+            height: 1px;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: left;
-            flex: 1;
-        }
-        .hud-vibe-pill {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.52rem;
-            background: var(--pink);
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 6px;
-            white-space: nowrap;
-            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
-        }
-        .spotify-slot {
-            margin: 4px 0 8px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #121212;
-            min-height: 80px;
-        }
-        .music-hud-controls {
-            display: flex;
-            gap: 6px;
-            justify-content: center;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .hud-btn {
-            background: var(--panel-ink);
-            color: #ffd86b;
-            border: 2px solid var(--outline);
-            padding: 6px 10px;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 2px;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -3px 0 rgba(0,0,0,0.4);
-            transition: transform 0.08s, filter 0.08s;
-        }
-        .hud-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
-        .hud-btn:active { transform: translateY(2px); }
-        .hud-btn-accent {
-            background: var(--mint);
-            color: var(--outline);
-            animation: pulse-border 1.6s infinite;
-        }
-        @keyframes pulse-border {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(91, 227, 125, 0.7); }
-            50% { box-shadow: 0 0 0 5px rgba(91, 227, 125, 0); }
+            opacity: 0;
+            pointer-events: none;
+            left: -9999px;
         }
 
         #musicButtons button.active-track {
@@ -375,7 +292,7 @@
         <h3>1. Upload Your Photo</h3>
         <input type="file" id="imageInput" accept="image/*" />
         <br><br>
-        <button onclick="uploadAndAnalyze()">Analyze & Join Room</button>
+        <button onclick="uploadAndAnalyze(event)">Analyze & Join Room</button>
         <p id="statusText"></p>
     </div>
 
@@ -392,7 +309,6 @@
 
         <h3>🎵 Image Vibe Track Recommendations:</h3>
         <p style="font-size: 1.1rem; margin: -4px 0 10px; color: var(--panel-ink);">Click any song below to vibe with your image:</p>
-        <p style="font-size: 1.1rem; margin: 0 0 10px; color: var(--pink-dark); font-weight: bold;">👇 Press ▶ on the Spotify player below once, so the song can play during the game!</p>
         <div id="musicButtons"></div>
 
         <hr style="border-color: #6b58c9; margin: 18px 0;">
@@ -400,7 +316,7 @@
         <h3>🔍 Search Any Song on Spotify:</h3>
         <div style="display: flex; gap: 8px; justify-content: center; align-items: center; max-width: 440px; margin: 0 auto;">
             <input type="text" id="spotifyQuery" placeholder="Type artist or song title..." />
-            <button onclick="searchSpotifyTrack()" style="margin: 0; padding: 10px 14px;">Search</button>
+            <button onclick="searchSpotifyTrack(event)" style="margin: 0; padding: 10px 14px;">Search</button>
         </div>
 
         <div id="selectedTrackCard" style="margin-top: 18px; display: none; background: rgba(42, 29, 92, 0.08); border: 2px dashed #6b58c9; border-radius: 14px; padding: 14px;">
@@ -408,7 +324,7 @@
                 🎵 Selected Track
             </div>
             <p style="font-size: 0.95rem; margin: 0 0 12px; color: var(--panel-ink);">
-                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music starts automatically!
+                Tempo: <span id="selectedTrackBpm" style="font-weight: bold; color: var(--pink-dark);">7</span> BPM Speed • Music plays live in background during your run!
             </p>
 
             <!-- Host Controls -->
@@ -423,31 +339,9 @@
         </div>
     </div>
 
-    <!-- STEP 3: ACTIVE GAME MUSIC HUD -->
-    <div id="gameMusicHUD" class="music-hud" style="display: none;">
-        <div class="music-hud-header">
-            <div class="music-hud-title">
-                <span class="music-pulse-icon">🎵</span>
-                <span id="hudTrackTitle">Loading Track...</span>
-            </div>
-            <span id="hudVibeBadge" class="hud-vibe-pill">VIBE</span>
-        </div>
-
-        <div id="spotifyEmbedSlot" class="spotify-slot">
-            <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
-        </div>
-
-        <div class="music-hud-controls">
-            <button type="button" id="btnSoundMode" onclick="cycleSoundMode(event)" class="hud-btn">
-                🔊 Sound: <span id="soundModeLabel">Spotify + Beat</span>
-            </button>
-            <button type="button" id="btnMuteAudio" onclick="toggleMuteAudio(event)" class="hud-btn">
-                🔊 Mute
-            </button>
-            <button type="button" id="btnKickstart" onclick="kickstartSpotifyAudio(event)" class="hud-btn hud-btn-accent">
-                ▶ Re-focus Game
-            </button>
-        </div>
+    <!-- BACKGROUND AUDIO PLAYER (HIDDEN FROM UI) -->
+    <div class="hidden-spotify-container">
+        <iframe id="spotifyPlayer" src="" width="1" height="1" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
     </div>
 
     <audio id="previewAudio" loop></audio>
@@ -564,8 +458,6 @@
     /* Spotify Controller & Audio Context */
     let spotifyEmbedController = null;
     let audioCtx = null;
-    let soundMode = 'both';
-    let isMuted = false;
     let beatInterval = null;
     let beatStep = 0;
 
@@ -591,10 +483,10 @@
         const element = document.getElementById('spotifyPlayer');
         if (!element) return;
         try {
-            IFrameAPI.createController(element, { uri: 'spotify:track:' + (loadedTrackId || '0Vj2y1A13Vi48CoI3NeP8f') }, (EmbedController) => {
+            IFrameAPI.createController(element, { uri: 'spotify:track:0Vj2y1A13Vi48CoI3NeP8f' }, (EmbedController) => {
                 spotifyEmbedController = EmbedController;
                 spotifyEmbedController.addListener('playback_update', e => {
-                    if (!e.data.isPaused && soundMode === 'both') stopSynthBeat();
+                    if (!e.data.isPaused) stopSynthBeat();
                 });
             });
         } catch(err) { console.warn("Spotify IFrame API init error:", err); }
@@ -668,14 +560,10 @@
 
     socket.on('gameStart', ({ speed }) => {
         startAudioPlayback();
-        setTimeout(() => {
-            if (spotifyEmbedController) { try { spotifyEmbedController.resume(); } catch(e){} }
-        }, 400);
         document.getElementById('shareBanner').style.display = 'none';
         document.getElementById('uploadPanel').style.display = 'none';
         document.getElementById('musicPanel').style.display = 'none';
 
-        document.getElementById('gameMusicHUD').style.display = 'block';
         canvas.style.display = 'block';
         document.getElementById('controlsHint').style.display = 'block';
 
@@ -698,7 +586,6 @@
 
         canvas.style.display = 'none';
         document.getElementById('controlsHint').style.display = 'none';
-        document.getElementById('gameMusicHUD').style.display = 'none';
         document.getElementById('gameOverPanel').style.display = 'block';
 
         const isMeWinner = socket.id === winnerId;
@@ -835,8 +722,9 @@
         reader.readAsDataURL(file);
     });
 
-    async function uploadAndAnalyze() {
+    async function uploadAndAnalyze(evt) {
         if (!base64Image) return alert("Please select an image first!");
+        getAudioContext();
         document.getElementById('statusText').innerText = "Analyzing image vibe...";
 
         try {
@@ -855,7 +743,6 @@
 
             document.getElementById('uploadPanel').style.display = 'none';
             document.getElementById('musicPanel').style.display = 'block';
-            document.getElementById('gameMusicHUD').style.display = 'block'; // show Spotify player in lobby so the user can press play once
 
             document.getElementById('charTitle').innerHTML = `Character: ${gameData.characterName} <br><span style="font-size:0.7em; background:var(--pink); color:#fff; padding:4px 10px; border-radius:8px; display:inline-block; margin-top:6px;">Vibe: ${gameData.vibeBadge}</span>`;
 
@@ -867,7 +754,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'track-select-btn';
                 btn.innerText = `🎵 ${opt.genre}: ${opt.description}`;
-                btn.onclick = (evt) => selectSong(opt, btn, evt);
+                btn.onclick = (e) => selectSong(opt, btn, e);
                 btnContainer.appendChild(btn);
                 if (idx === 0) selectSong(opt, btn);
             });
@@ -875,6 +762,7 @@
             alert("Error connecting.");
         } finally {
             document.getElementById('statusText').innerText = "";
+            regainGameFocus(evt);
         }
     }
 
@@ -902,30 +790,28 @@
         regainGameFocus(evt);
     }
 
-    let loadedTrackId = null;
-
     function loadSpotifyPlayer(trackId, title) {
+        const iframe = document.getElementById('spotifyPlayer');
         const trackTitle = title || currentSelectedTrack?.description || "Syncing Music...";
 
-        const hudTitle = document.getElementById('hudTrackTitle');
-        if (hudTitle) hudTitle.innerText = trackTitle;
-        const selName = document.getElementById('selectedTrackName');
-        if (selName) selName.innerText = `🎵 ${trackTitle}`;
+        if (document.getElementById('selectedTrackName')) {
+            document.getElementById('selectedTrackName').innerText = `🎵 ${trackTitle}`;
+        }
 
-        // Same song? Do nothing (stops the constant reloading that interrupted the music)
-        if (trackId === loadedTrackId) return;
-        loadedTrackId = trackId;
+        if (iframe) {
+            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0&autoplay=1`;
+        }
 
         if (spotifyEmbedController) {
-            try { spotifyEmbedController.loadUri(`spotify:track:${trackId}`); } catch (e) { console.log("Spotify controller load error:", e); }
-        } else {
-            // Fallback only if the Spotify iFrame API hasn't loaded yet
-            const iframe = document.getElementById('spotifyPlayer');
-            if (iframe) iframe.src = `https://open.spotify.com/embed/track/${trackId}`;
+            try {
+                spotifyEmbedController.loadUri(`spotify:track:${trackId}`);
+            } catch(e) {
+                console.log("Spotify controller load error:", e);
+            }
         }
     }
 
-    async function searchSpotifyTrack() {
+    async function searchSpotifyTrack(evt) {
         const q = document.getElementById('spotifyQuery').value.trim();
         if (!q) return;
 
@@ -941,12 +827,13 @@
                     description: data.trackName || q,
                     spotifyTrackId: data.spotifyTrackId
                 };
-                selectSong(searchedTrack, null);
+                selectSong(searchedTrack, null, evt);
             }
         } catch (err) {
             console.error("Search error:", err);
         } finally {
             document.getElementById('statusText').innerText = "";
+            regainGameFocus(evt);
         }
     }
 
@@ -966,48 +853,7 @@
     function startAudioPlayback() {
         getAudioContext();
         if (spotifyEmbedController) { try { spotifyEmbedController.play(); } catch(e){} }
-        if (!isMuted && (soundMode === 'both' || soundMode === 'synth')) {
-            startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
-        }
-    }
-
-    function kickstartSpotifyAudio(evt) {
-        getAudioContext();
-        if (spotifyEmbedController) { try { spotifyEmbedController.play(); } catch(e){} }
-        if (!beatInterval && !isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
-        regainGameFocus(evt);
-    }
-
-    function cycleSoundMode(evt) {
-        if (soundMode === 'both') {
-            soundMode = 'synth';
-            document.getElementById('soundModeLabel').innerText = '🕹️ 8-Bit Beat Only';
-            if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
-            if (!isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
-        } else if (soundMode === 'synth') {
-            soundMode = 'spotify';
-            document.getElementById('soundModeLabel').innerText = '🎵 Spotify Only';
-            stopSynthBeat();
-            kickstartSpotifyAudio();
-        } else {
-            soundMode = 'both';
-            document.getElementById('soundModeLabel').innerText = '🎵 Spotify + Beat';
-            if (!isMuted) startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
-            kickstartSpotifyAudio();
-        }
-        regainGameFocus(evt);
-    }
-
-    function toggleMuteAudio(evt) {
-        isMuted = !isMuted;
-        document.getElementById('btnMuteAudio').innerText = isMuted ? '🔇 Unmute' : '🔊 Mute';
-        if (isMuted) {
-            stopSynthBeat();
-            if (spotifyEmbedController) { try { spotifyEmbedController.pause(); } catch(e){} }
-        } else if (!gameOver) {
-            startAudioPlayback();
-        }
-        regainGameFocus(evt);
+        startSynthBeat(gameData?.vibeCategory || "FUN", selectedBpm);
     }
 
     /* Web Audio Synthesizer Beat */
@@ -1028,7 +874,7 @@
         const pattern = VIBE_PATTERNS[vibe] || VIBE_PATTERNS["FUN"];
 
         function playStep() {
-            if (gameOver || isMuted) return;
+            if (gameOver) return;
             const now = ctx.currentTime;
             const step = beatStep % 8;
             if (step === 0 || step === 4) playKick(now);
@@ -1109,16 +955,6 @@
     let gameOver = false;
     let fallingObjects = [];
     let gameInterval = null;
-
-    // When the user clicks inside the Spotify iframe, give keyboard focus back to the game
-    window.addEventListener('blur', () => {
-        setTimeout(() => {
-            if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
-                document.activeElement.blur();
-                regainGameFocus();
-            }
-        }, 0);
-    });
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft' || e.key === 'a') if (currentLane > 0) currentLane--;
