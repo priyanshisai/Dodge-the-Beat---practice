@@ -1,0 +1,58 @@
+# Environment & Secret Keys (CRITICAL FOR SECURITY)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependency Directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# Logs & Runtime Data
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Operating System & IDE Specific Files
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# VS Code & Editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.idea/
+
+# Temporary & Cache Files
+.cache/
+.npm
+.eslintcache
+.stylelintcache
+*.tmp
+*.temp
+
+# Production Build Outputs (if using React/Vite/Next.js in the future)
+dist/
+build/
+out/
+.next/
