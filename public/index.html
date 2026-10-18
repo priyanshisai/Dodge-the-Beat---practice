@@ -39,20 +39,8 @@
         #scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
         .sp { position: absolute; line-height: 0; }
         .sp svg { display: block; }
-        .moon  { top: 5%; right: 8%; }
-        .cloud { left: -260px; animation: drift linear infinite; }
-        .cloud svg { width: var(--cw, 120px); height: auto; }
-        .cloud-a { top: 16%; --cw: 130px; animation-duration: 90s; }
-        .cloud-b { top: 52%; --cw: 110px; animation-duration: 120s; animation-delay: -50s; opacity: .9; }
-        .cloud-c { top: 7%;  --cw: 84px;  animation-duration: 70s;  animation-delay: -22s; opacity: .85; }
-        .cloud-d { top: 36%; --cw: 150px; animation-duration: 110s; animation-delay: -70s; }
-        .cloud-e { top: 66%; --cw: 96px;  animation-duration: 100s; animation-delay: -35s; opacity: .8; }
-        .cloud-f { top: 26%; --cw: 72px;  animation-duration: 60s;  animation-delay: -10s; opacity: .75; }
-        .tree  { bottom: 64px; left: 3%; }
-        .bush  { bottom: 64px; right: 4%; }
-        .star  { animation: twinkle 3s steps(2) infinite; }
-        @keyframes drift { to { transform: translateX(calc(100vw + 300px)); } }
-        @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+        .moon { top: 5%; right: 8%; }
+
         #ground {
             position: fixed; left: 0; right: 0; bottom: 0; height: 64px; z-index: 1;
             border-top: 6px solid #c3cbef;
@@ -60,7 +48,6 @@
             image-rendering: pixelated;
             pointer-events: none;
         }
-        @media (max-width: 700px) { .tree, .bush { display: none; } }
 
         .hero {
             position: relative;
@@ -77,11 +64,9 @@
             line-height: 1.6;
             margin: 0 0 22px;
             color: var(--panel-ink);
-            letter-spacing: 1px;
         }
         .pill {
             display: inline-block;
-            position: relative;
             background: var(--pink);
             color: #fff;
             font-family: 'Press Start 2P', monospace;
@@ -143,6 +128,7 @@
             transition: transform .08s;
         }
         button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.8); }
 
         #musicButtons button { display: block; width: 100%; margin: 12px 0; text-align: left; color: var(--outline); }
         #statusText { margin: 14px 0 0; min-height: 1.4em; }
@@ -202,9 +188,10 @@
 
     <!-- SHARE LINK BANNER -->
     <div id="shareBanner" class="card">
-        <h3>🔗 Share This Link With Opponent:</h3>
+        <h3>🔗 Share Link With Opponent:</h3>
         <div id="shareUrlBox" class="share-box">Generating room link...</div>
         <p id="roomPlayerCount">Players in room: 1 / 2</p>
+        <p id="guestStatusText" style="color: var(--pink-dark); font-weight: bold;"></p>
     </div>
 
     <!-- STEP 1: UPLOAD -->
@@ -231,8 +218,17 @@
         <div id="spotifyEmbedContainer" style="margin-top: 15px; display: none;">
             <iframe id="spotifyPlayer" class="spotify-frame" src="" width="100%" height="80" frameborder="0" allow="autoplay; encrypted-media"></iframe>
             <br>
-            <p style="font-size: 0.8rem; color: var(--panel-ink); margin: 6px 0;">💡 Press ▶ in player above, then click Start!</p>
-            <button id="startBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline);">Start Game for Both!</button>
+            <p style="font-size: 0.8rem; color: var(--panel-ink); margin: 6px 0;">💡 Press ▶ in player above!</p>
+
+            <!-- Host Button -->
+            <button id="hostStartBtn" onclick="requestStartGame()" style="background: var(--mint); color: var(--outline); display: none;" disabled>
+                Waiting for Opponent to Ready Up...
+            </button>
+
+            <!-- Guest Button -->
+            <button id="guestReadyBtn" onclick="sendReadySignal()" style="background: var(--gold); color: var(--outline); display: none;">
+                I'm Ready!
+            </button>
         </div>
     </div>
 
@@ -250,7 +246,6 @@
 </div>
 
 <script>
-    // Socket.io Room Setup
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     let roomId = urlParams.get('room');
@@ -270,15 +265,60 @@
     let selectedBpm = 7;
     let opponentLane = 2;
     let opponentScore = 0;
+    let isHostPlayer = false;
 
     // Room Syncing Listeners
     socket.on('roomState', (room) => {
-        const count = Object.keys(room.players).length;
+        const playerIds = Object.keys(room.players);
+        const count = playerIds.length;
         document.getElementById('roomPlayerCount').innerText = `Players in room: ${count} / 2`;
 
+        const myData = room.players[socket.id];
+        if (myData) isHostPlayer = myData.isHost;
+
+        // Determine Opponent Status
+        let opponent = null;
         for (let pid in room.players) {
-            if (pid !== socket.id && room.players[pid].image) {
-                opponentImg.src = room.players[pid].image;
+            if (pid !== socket.id) {
+                opponent = room.players[pid];
+                if (opponent.image) opponentImg.src = opponent.image;
+            }
+        }
+
+        // Toggle Host vs Guest Controls
+        const hostBtn = document.getElementById('hostStartBtn');
+        const guestBtn = document.getElementById('guestReadyBtn');
+        const statusText = document.getElementById('guestStatusText');
+
+        if (isHostPlayer) {
+            hostBtn.style.display = 'inline-block';
+            guestBtn.style.display = 'none';
+
+            if (count < 2) {
+                hostBtn.innerText = "Waiting for Opponent to Join...";
+                hostBtn.disabled = true;
+                statusText.innerText = "Share link above with a friend!";
+            } else if (opponent && !opponent.isReady) {
+                hostBtn.innerText = "Waiting for Opponent to Click 'Ready'...";
+                hostBtn.disabled = true;
+                statusText.innerText = "Opponent joined! Waiting for them to click Ready...";
+            } else {
+                hostBtn.innerText = "Start Game for Both!";
+                hostBtn.disabled = false;
+                statusText.innerText = "Opponent is Ready! Click Start!";
+            }
+        } else {
+            hostBtn.style.display = 'none';
+            guestBtn.style.display = 'inline-block';
+
+            if (myData && myData.isReady) {
+                guestBtn.innerText = "You are Ready! (Waiting for Host to Start)";
+                guestBtn.disabled = true;
+                statusText.innerText = "Waiting for Host to start the match...";
+            } else {
+                guestBtn.innerText = "I'm Ready!";
+                guestBtn.disabled = false;
+                statusText.innerText = "Click 'I'm Ready!' when you are prepared.";
             }
         }
 
@@ -310,7 +350,7 @@
         opponentScore = score;
     });
 
-    // SYNCHRONIZED MATCH END FOR BOTH PLAYERS
+    // Synchronized Match End when ANY player loses
     socket.on('matchEnded', ({ loserId, winnerId, loserName, winnerName, obstacleHit, roast, scores }) => {
         gameOver = true;
         if (gameInterval) clearInterval(gameInterval);
@@ -406,10 +446,12 @@
         }
     }
 
+    function sendReadySignal() {
+        socket.emit('playerReady', { roomId });
+    }
+
     function requestStartGame() {
-        if (!base64Image) {
-            return alert("Please upload your photo before starting!");
-        }
+        if (!base64Image) return alert("Upload your photo first!");
         socket.emit('startGame', { roomId });
     }
 
@@ -479,7 +521,6 @@
             // Collision Detection
             if (obj.lane === currentLane && obj.y > playerY - 35 && obj.y < playerY + 25) {
                 gameOver = true;
-                // Emit collision event to server
                 socket.emit('playerDied', {
                     roomId,
                     score,

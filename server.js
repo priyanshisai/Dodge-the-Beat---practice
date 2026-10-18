@@ -154,56 +154,78 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomId, playerImage, characterName }) => {
         socket.join(roomId);
         if (!activeRooms[roomId]) {
-            activeRooms[roomId] = { players: {}, gameStarted: false, trackId: "0Vj2y1A13Vi48CoI3NeP8f", speed: 7 };
+            activeRooms[roomId] = {
+                players: {},
+                gameStarted: false,
+                trackId: "0Vj2y1A13Vi48CoI3NeP8f",
+                speed: 7
+            };
         }
 
-        activeRooms[roomId].players[socket.id] = {
+        const room = activeRooms[roomId];
+        const isHost = Object.keys(room.players).length === 0;
+
+        room.players[socket.id] = {
             id: socket.id,
             lane: 1,
             score: 0,
             image: playerImage,
             name: characterName || 'Player',
-            isHost: Object.keys(activeRooms[roomId].players).length === 0,
+            isHost: isHost,
+            isReady: isHost ? true : false, // Host is ready by default
             isDead: false
         };
 
-        io.to(roomId).emit('roomState', activeRooms[roomId]);
+        io.to(roomId).emit('roomState', room);
+    });
+
+    // Guest Player clicks "I'm Ready!"
+    socket.on('playerReady', ({ roomId }) => {
+        const room = activeRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].isReady = true;
+            io.to(roomId).emit('roomState', room);
+        }
     });
 
     // Host selects song & syncs to opponent
     socket.on('selectTrack', ({ roomId, trackId, speed }) => {
-        if (activeRooms[roomId]) {
-            activeRooms[roomId].trackId = trackId;
-            activeRooms[roomId].speed = speed;
+        const room = activeRooms[roomId];
+        if (room) {
+            room.trackId = trackId;
+            room.speed = speed;
             io.to(roomId).emit('trackSelected', { trackId, speed });
         }
     });
 
-    // Start game simultaneously for all players in room
+    // Only Host can start game when guest is ready
     socket.on('startGame', ({ roomId }) => {
-        if (activeRooms[roomId]) {
-            activeRooms[roomId].gameStarted = true;
-            io.to(roomId).emit('gameStart', { speed: activeRooms[roomId].speed });
+        const room = activeRooms[roomId];
+        if (room && room.players[socket.id]?.isHost) {
+            room.gameStarted = true;
+            io.to(roomId).emit('gameStart', { speed: room.speed });
         }
     });
 
     // Sync player lane movement live
     socket.on('moveLane', ({ roomId, lane }) => {
-        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
-            activeRooms[roomId].players[socket.id].lane = lane;
+        const room = activeRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].lane = lane;
             socket.to(roomId).emit('opponentMoved', { id: socket.id, lane });
         }
     });
 
     // Sync score live
     socket.on('updateScore', ({ roomId, score }) => {
-        if (activeRooms[roomId] && activeRooms[roomId].players[socket.id]) {
-            activeRooms[roomId].players[socket.id].score = score;
+        const room = activeRooms[roomId];
+        if (room && room.players[socket.id]) {
+            room.players[socket.id].score = score;
             socket.to(roomId).emit('opponentScore', { id: socket.id, score });
         }
     });
 
-    // CRITICAL FIX: Match Ends for BOTH players as soon as ONE player loses
+    // Match Ends for BOTH players as soon as ONE player loses
     socket.on('playerDied', ({ roomId, score, obstacleHit, roast }) => {
         const room = activeRooms[roomId];
         if (room && room.players[socket.id]) {
@@ -217,7 +239,6 @@ io.on('connection', (socket) => {
             const loserName = room.players[loserId]?.name || 'Player';
             const winnerName = winnerId ? room.players[winnerId]?.name : 'Opponent';
 
-            // Broadcast Match Over to BOTH players
             io.to(roomId).emit('matchEnded', {
                 loserId,
                 winnerId,
@@ -249,4 +270,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Multiplayer Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
